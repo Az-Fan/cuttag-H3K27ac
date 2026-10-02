@@ -22,6 +22,9 @@ for step in spec['steps']:
  try:
   with (directory/'execution.log').open('w') as log:r=subprocess.run(command,cwd=spec.get('working_directory'),stdout=log,stderr=subprocess.STDOUT)
   state='COMPUTATIONAL_PASS' if r.returncode==0 else 'FAILED';detail={'returncode':r.returncode}
+  cwd=Path(spec.get('working_directory') or Path.cwd())
+  missing=[name for name in step.get('outputs',[]) if not (cwd/name).is_file()]
+  if missing:state='FAILED';detail['missing_outputs']=missing
  except Exception as e:state='FAILED';detail={'message':str(e)}
  states[sid]=state;record={'id':sid,'state':state,'started':started,**detail};summary.append(record);(directory/'status.json').write_text(json.dumps(record,indent=2))
  if state=='FAILED' and not step.get('continue_on_error',False):

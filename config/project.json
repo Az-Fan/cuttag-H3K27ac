@@ -1,5 +1,5 @@
 {
-  "template_version": "0.3.0",
+  "template_version": "0.3.1",
   "project_id": "example_cuttag",
   "assay": "CUTTag",
   "target": "H3K27ac",
@@ -28,7 +28,9 @@
     "fasta": "",
     "equal_amount_confirmed": false,
     "added_at": "unknown",
-    "calibration_accepted": false
+    "calibration_accepted": false,
+    "alignment_profile": "",
+    "calibration_scope": ""
   },
   "analysis": {
     "numerator": "KD",
@@ -43,7 +45,8 @@
   "qc": {
     "upstream_accepted": false,
     "peaks_accepted": false,
-    "official_test_run_id": ""
+    "official_test_run_id": "",
+    "production_review": ""
   },
   "nfcore_params": {
     "use_control": true,

@@ -5,16 +5,23 @@ from pathlib import Path
 from consensus import intervals
 p=argparse.ArgumentParser();p.add_argument('--target',required=True,type=Path);p.add_argument('--background',required=True,type=Path);p.add_argument('--fasta',required=True,type=Path);p.add_argument('--out',required=True,type=Path);p.add_argument('--threads',type=int,default=4);p.add_argument('--width',type=int,default=200);p.add_argument('--min-windows',type=int,default=50);p.add_argument('--execute',action='store_true');a=p.parse_args()
 if a.out.exists():p.error('Output exists')
-if a.width<=0 or a.width%2 or a.threads<1:p.error('Positive even width and positive threads required')
+if a.width<=0 or a.width%2 or a.threads<1 or a.min_windows<1:p.error('Positive even width and positive threads required')
+fai=Path(str(a.fasta)+'.fai')
+if not a.fasta.is_file() or not fai.is_file():raise ValueError('FASTA and matching .fai required to validate window bounds')
+sizes={r[0]:int(r[1]) for r in (l.split() for l in fai.read_text().splitlines())}
 a.out.mkdir(parents=True);excluded=[]
 def windows(path,label):
  keep=[]
  for c,s,e in sorted(intervals(path)):
   mid=(s+e)//2;z=(c,mid-a.width//2,mid+a.width//2)
-  if z[1]<0 or (keep and keep[-1][0]==c and z[1]<keep[-1][2]):excluded.append((label,*z));continue
+  if c not in sizes or z[1]<0 or z[2]>sizes[c] or (keep and keep[-1][0]==c and z[1]<keep[-1][2]):excluded.append((label,*z));continue
   keep.append(z)
  return keep
-z=windows(a.target,'target');b=windows(a.background,'background');b=[v for v in b if not any(v[0]==t[0] and v[1]<t[2] and t[1]<v[2] for t in z)]
+z=windows(a.target,'target');b=windows(a.background,'background');filtered=[]
+for v in b:
+ if any(v[0]==t[0] and v[1]<t[2] and t[1]<v[2] for t in z):excluded.append(('background_target_overlap',*v))
+ else:filtered.append(v)
+b=filtered
 for label,v in [('target',z),('background',b)]:
  (a.out/(label+'.bed')).write_text(''.join(f'{c}\t{s}\t{e}\t{label}_{i}\n' for i,(c,s,e) in enumerate(v)))
 (a.out/'excluded.json').write_text(json.dumps(excluded))

@@ -10,19 +10,20 @@ a.out.mkdir(parents=True);filtered=a.out/'namesorted.bam';
 exclude=4|8|256|512|2048|(1024 if a.remove_duplicates else 0)
 cmd1=['samtools','view','-b','-f','2','-F',str(exclude),'-q',str(a.mapq),str(a.bam)]
 cmd2=['samtools','sort','-n','-@',str(a.threads),'-o',str(filtered),'-']
+(a.out/'filter_sort.commands.json').write_text(json.dumps([cmd1,cmd2],indent=2))
 with (a.out/'filter_sort.log').open('w') as log:
  first=subprocess.Popen(cmd1,stdout=subprocess.PIPE,stderr=log);second=subprocess.run(cmd2,stdin=first.stdout,stderr=log);first.stdout.close();rc=first.wait()
 if rc or second.returncode:raise RuntimeError('samtools filter/name sort failed')
 cmd=['samtools','view',str(filtered)];(a.out/'samtools_view.command.json').write_text(json.dumps(cmd))
-lengths=collections.Counter();n=0
+lengths=collections.Counter();discarded=collections.Counter();n=0
 def emit(pair,out):
  global n
- if len(pair)!=2:return
+ if len(pair)!=2:discarded['not_exactly_two_primary_mates']+=1;return
  one=next((f for f in pair if int(f[1])&0x40),None);two=next((f for f in pair if int(f[1])&0x80),None)
- if not one or not two or one[2]!=two[2] or one[2]=='*':return
+ if not one or not two or one is two or one[2]!=two[2] or one[2]=='*':discarded['invalid_mates_or_reference']+=1;return
  if int(one[4])<a.mapq or int(two[4])<a.mapq:return
  tlen=int(one[8]);start=min(int(one[3])-1,int(two[3])-1);end=start+abs(tlen)
- if tlen==0 or start<0 or end<=start:return
+ if tlen==0 or int(two[8])!=-tlen or start<0 or end<=start:discarded['invalid_template_length']+=1;return
  out.write(f'{one[2]}\t{start}\t{end}\t{one[0]}\n');n+=1;lengths[end-start]+=1
 proc=subprocess.Popen(cmd,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 with (a.out/'fragments.bed').open('w') as out:
@@ -37,4 +38,4 @@ with (a.out/'fragments.bed').open('w') as out:
 if not n:raise ValueError('No usable paired fragments')
 with (a.out/'length_histogram.tsv').open('w') as f:
  w=csv.writer(f,delimiter='\t');w.writerow(['length','fragments']);w.writerows(sorted(lengths.items()))
-(a.out/'summary.json').write_text(json.dumps({'fragments':n,'minimum_MAPQ_both_mates':a.mapq,'duplicates_removed':a.remove_duplicates,'unit':'paired fragment; TLEN from primary proper pair'},indent=2))
+(a.out/'summary.json').write_text(json.dumps({'fragments':n,'minimum_MAPQ_both_mates':a.mapq,'duplicates_removed':a.remove_duplicates,'unit':'paired fragment; TLEN from primary proper pair','discarded_pair_groups':dict(discarded)},indent=2))

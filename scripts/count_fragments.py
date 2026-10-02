@@ -5,13 +5,14 @@ from pathlib import Path
 p=argparse.ArgumentParser();p.add_argument('--peaks',required=True,type=Path);p.add_argument('--samples',required=True,type=Path);p.add_argument('--out',required=True,type=Path);a=p.parse_args()
 rows=list(csv.DictReader(a.samples.open(),delimiter='\t'))
 ids=[r['sample_id'] for r in rows]
-if not rows or len(ids)!=len(set(ids)):p.error('Unique nonempty biological sample IDs required')
-peaks=[l.split()[:4] for l in a.peaks.read_text().splitlines() if l.strip()]
+if not rows or any(not x for x in ids) or len(ids)!=len(set(ids)):p.error('Unique nonempty biological sample IDs required')
+peaks=[l.split() for l in a.peaks.read_text().splitlines() if l.strip()]
 if not peaks or any(len(r)!=4 or int(r[1])<0 or int(r[2])<=int(r[1]) for r in peaks) or len({r[3] for r in peaks})!=len(peaks):p.error('BED4 with unique peak IDs required')
 if a.out.exists():p.error('Output exists')
 columns=[];commands=[]
 for r in rows:
- cmd=['bedtools','coverage','-counts','-a',str(a.peaks),'-b',r['fragments_bed']];commands.append(cmd)
+ fragment=Path(r['fragments_bed']);fragment=fragment if fragment.is_absolute() else a.samples.resolve().parent/fragment
+ cmd=['bedtools','coverage','-counts','-a',str(a.peaks),'-b',str(fragment)];commands.append(cmd)
  result=subprocess.run(cmd,text=True,capture_output=True,check=True)
  lines=[l.split('\t') for l in result.stdout.splitlines()]
  if [l[:4] for l in lines]!=peaks:raise ValueError('Coverage coordinates/order changed')
