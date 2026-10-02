@@ -1,0 +1,56 @@
+{
+  "template_version": "0.1.0",
+  "project_id": "example_cuttag",
+  "assay": "CUTTag",
+  "target": "H3K27ac",
+  "samples": "config/samples.tsv",
+  "pipeline": {
+    "name": "nf-core/cutandrun",
+    "version": "3.2.2",
+    "profile": "apptainer"
+  },
+  "reference": {
+    "genome": "hg38",
+    "fasta": "data/external/genome.fa",
+    "gtf": "data/external/genes.gtf",
+    "blacklist": "data/external/blacklist.bed",
+    "macs_gsize": 2700000000,
+    "mito_name": "chrM"
+  },
+  "resources": {
+    "cpus": 8,
+    "memory_gb": 32,
+    "min_free_gb": 20
+  },
+  "spikein": {
+    "enabled": false,
+    "identity": "unknown",
+    "fasta": "",
+    "equal_amount_confirmed": false,
+    "added_at": "unknown",
+    "calibration_accepted": false
+  },
+  "analysis": {
+    "numerator": "KD",
+    "denominator": "Control",
+    "replicates_confirmed": false,
+    "design": "~ condition",
+    "normalization": "conventional",
+    "alpha": 0.05,
+    "abs_log2fc": 1,
+    "min_total_count": 10
+  },
+  "qc": {
+    "upstream_accepted": false,
+    "peaks_accepted": false
+  },
+  "nfcore_params": {
+    "use_control": true,
+    "dedup_target_reads": false,
+    "remove_linear_duplicates": false,
+    "peakcaller": "macs2",
+    "macs2_narrow_peak": true,
+    "save_trimmed": true,
+    "dump_scale_factors": true
+  }
+}

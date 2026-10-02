@@ -1,0 +1,4 @@
+sample_id	biological_sample_id	library_id	unit_id	condition	group	replicate	role	control_group	fastq_1	fastq_2
+Control1	Control1	Control1_lib	Control1_lane1	Control	Control_H3K27ac	1	target	IgG	data/raw/Control1_R1.fastq.gz	data/raw/Control1_R2.fastq.gz
+KD1	KD1	KD1_lib	KD1_lane1	KD	KD_H3K27ac	1	target	IgG	data/raw/KD1_R1.fastq.gz	data/raw/KD1_R2.fastq.gz
+IgG1	IgG1	IgG1_lib	IgG1_lane1	IgG	IgG	1	control		data/raw/IgG1_R1.fastq.gz	data/raw/IgG1_R2.fastq.gz

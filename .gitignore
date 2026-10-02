@@ -1,0 +1,11 @@
+.pixi/
+.nextflow/
+.nextflow.log*
+work/
+shared_cache/
+data/raw/
+data/external/
+results/
+logs/
+__pycache__/
+config/paths.env
