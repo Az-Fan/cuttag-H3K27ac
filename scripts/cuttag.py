@@ -102,6 +102,12 @@ def main():
     if not re.fullmatch(r'[A-Za-z0-9_-]+',runid): raise ValueError('Invalid run ID')
     out=(root/'results/runs'/runid).resolve()
     if a.command=='run':
+        test_id=cfg['qc'].get('official_test_run_id','')
+        if not re.fullmatch(r'[A-Za-z0-9_-]+',test_id): raise ValueError('Record a successful official_test_run_id before real execution')
+        test_dir=root/'results/runs'/test_id
+        if not (test_dir/'status.json').is_file() or json.loads((test_dir/'status.json').read_text()).get('state')!='COMPUTATIONAL_PASS': raise ValueError('Official test has not passed')
+        test_cmd=json.loads((test_dir/'command.json').read_text())
+        if 'test,'+cfg['pipeline']['profile'] not in test_cmd or cfg['pipeline']['version'] not in test_cmd: raise ValueError('Test profile/version mismatch')
         if a.allow_missing: raise ValueError('--allow-missing cannot be used for execution')
         if a.stage=='production' and not cfg['qc']['upstream_accepted']: raise ValueError('Accept upstream QC before production')
         if a.stage=='production' and cfg['spikein']['enabled'] and not cfg['spikein']['calibration_accepted']: raise ValueError('Accept spike-in calibration before production')

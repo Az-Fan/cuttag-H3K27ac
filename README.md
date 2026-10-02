@@ -1,6 +1,6 @@
-# CUT&Tag 项目模板 v0.1.0
+# CUT&Tag 项目模板 v0.2.0
 
-从 ACLY-CUTTAG 两批项目沉淀的独立模板。当前版本提供样本校验、完整 FASTQ 检查、nf-core 运行计划/执行、片段计数、DESeq2、峰注释和离线 ORA 入口。完整建设规划见 [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md)。
+从 ACLY-CUTTAG 两批项目沉淀的独立模板。当前版本提供样本校验、完整 FASTQ 检查、nf-core 运行计划/执行、共识峰、spike-in 计数审计、MACS2 诊断矩阵、片段计数、DESeq2、峰注释、离线 ORA、HOMER motif、统计可视化和交付审阅入口。完整建设规划见 [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md)。
 
 ## 快速开始
 
@@ -12,6 +12,7 @@ python3 scripts/cuttag.py plan --stage alignment
 # 安装依赖并生成项目自己的锁文件
 pixi install
 pixi run python scripts/cuttag.py test
+# 将成功的 test run ID 写入 qc.official_test_run_id
 pixi run python scripts/cuttag.py validate
 pixi run python scripts/cuttag.py inventory
 pixi run python scripts/cuttag.py run --stage alignment
@@ -39,6 +40,8 @@ pixi run python scripts/cuttag.py run --stage production
 
 ## 当前验证范围
 
-Python 契约测试覆盖技术拆分、重复映射冲突、FASTQ 重用、单样本阻止正式推断。未执行真实测序数据、官方 nf-core test、R 分析或环境安装；此版本仍是开发版，尚不能称稳定版。`pixi.lock` 将在首次安装/解析后生成并需纳入新项目版本管理。
+10 项 Python 行为测试已通过，所有 R 脚本通过语法检查。Pixi 依赖已成功解析并生成 `pixi.lock`；基础环境安装、合成 DESeq2 和两个源项目的设计登记回放见 [PROJECT_STATUS.md](PROJECT_STATUS.md)。
 
-待后续实现：自动 consensus/重复支持峰构建、spike-in 参数审计与全量重计数、caller 诊断矩阵、通用 motif/轨迹图、自动最终报告与清理入口、迁移回放与端到端验证。相关手工方法和验收规则见 SOP 与建设规划。
+本版本仍是开发版。真实 FASTQ 上的 nf-core 官方/生产流程、外部 HOMER、注释参考与 ORA 资源端到端尚待验证；已有结果与文档不能代替这些验收。
+
+新增模块用法详见 [SOP](docs/SOP.md)：`consensus.py`、`spikein_audit.py`、`peak_diagnostics.py`、`motif.py`、`visualize.R`、`finalize.py`。命令式脚本相互独立，由明确输入契约衔接；目前没有统一自动执行所有下游步骤的编排器。spike-in 全量比对需用审计选定参数运行 Bowtie2，再交日志给审计入口。

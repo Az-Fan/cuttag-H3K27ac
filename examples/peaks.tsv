@@ -1,0 +1,5 @@
+group	biological_sample_id	peaks_bed
+Control	Control1	Control1.narrowPeak
+Control	Control2	Control2.narrowPeak
+KD	KD1	KD1.narrowPeak
+KD	KD2	KD2.narrowPeak

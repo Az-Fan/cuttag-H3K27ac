@@ -1,0 +1,5 @@
+sample_id	biological_sample_id	condition	replicates_confirmed
+Control1	Control1	Control	FALSE
+Control2	Control2	Control	FALSE
+KD1	KD1	KD	FALSE
+KD2	KD2	KD	FALSE

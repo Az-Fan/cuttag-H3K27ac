@@ -1,0 +1,8 @@
+{
+  "project": "example_cuttag",
+  "limitations": ["Verify independent biological replicates before formal inference", "Nearest gene annotation is positional association"],
+  "artifacts": [
+    {"label": "Complete differential results", "path": "../results/differential/model1/complete.tsv", "required": true},
+    {"label": "Model diagnostics", "path": "../results/figures/model1/diagnostics.pdf", "required": true}
+  ]
+}

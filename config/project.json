@@ -1,5 +1,5 @@
 {
-  "template_version": "0.1.0",
+  "template_version": "0.2.0",
   "project_id": "example_cuttag",
   "assay": "CUTTag",
   "target": "H3K27ac",
@@ -42,7 +42,8 @@
   },
   "qc": {
     "upstream_accepted": false,
-    "peaks_accepted": false
+    "peaks_accepted": false,
+    "official_test_run_id": ""
   },
   "nfcore_params": {
     "use_control": true,

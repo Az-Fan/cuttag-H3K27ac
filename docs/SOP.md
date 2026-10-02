@@ -33,7 +33,7 @@ pixi run -e analysis Rscript scripts/differential.R results/counts/raw.tsv metad
 pixi run -e analysis Rscript scripts/differential.R results/counts/raw.tsv metadata.tsv KD Control results/differential/model2 spikein spikein.tsv
 ```
 
-spikein.tsv 含 `sample_id spikein_fragments calibration_accepted`；accepted 写 TRUE。DESeq2 的 size factor 为 spike-in counts / 其几何平均数，归一化 counts 因此与该值相除。默认过滤 total count ≥10、FDR<0.05、|log2FC|≥1，目前 R 入口固定这些参数；project.json 的同名参数是计划元数据，修改后需同步修改 R 实现并记录。CPM BigWig 与 median-ratio DESeq2 是不同归一化。
+spikein.tsv 含 `sample_id spikein_fragments calibration_accepted`；accepted 写 TRUE。DESeq2 的 size factor 为 spike-in counts / 其几何平均数，归一化 counts 因此与该值相除。默认过滤 total count ≥10、FDR<0.05、|log2FC|≥1，R 入口支持文末列出的环境变量，project.json 的同名参数是计划元数据，执行独立 R 命令时须同步。CPM BigWig 与 median-ratio DESeq2 是不同归一化。
 
 ## 注释与 ORA
 
@@ -49,3 +49,56 @@ Motif 当前按规划执行外部 HOMER，尚未包装通用入口：目标与�
 ## 交付和存储
 
 交付清单含实验设计、比较方向、结果/模型版本、QC 决策、完整结果、限制和版本。检查所有软链接及 IGV 路径可迁移。缓存/work 清理前保存任务命令、日志和清单，并保护 FASTQ、发布结果、引用的参考与 IGV 文件；当前没有自动删除入口。
+
+## v0.2 专项模块
+
+`qc.official_test_run_id` 必须指向当前项目已成功的官方 test run，并匹配版本/profile，方可执行真实 alignment/production。
+
+### 共识峰
+
+峰 manifest 是 TSV：`group biological_sample_id peaks_bed`。peaks_bed 相对 manifest 目录解析。同一生物样本多文件先在样本内合并，因此不能增加支持度。`--fraction` 定义每个组需要的独立样本比例，向上取整；默认 2/3。只保留达到支持度的碱基区间，随后组间 union/merge。与 blacklist 重叠的整个共识区间丢弃。与“峰间任意重叠即保留整峰”不同，需明确本规则。
+
+```bash
+python scripts/consensus.py --manifest peaks.tsv --blacklist blacklist.bed --out results/peaks/consensus1
+```
+
+### spike-in 审计
+
+manifest 为 TSV：`sample_id mode bowtie2_log`。同一模式同一样本只能一行；log 相对于 manifest 目录解析。统计 concordantly exactly 1 与 >1 的 paired fragments；多重比对仍在计数中，报告要求审核 MAPQ/多重比对规则。不要把不同 read 子集、技术拆分单位与合并后生物样本混在同一校准集合。
+
+```bash
+python scripts/spikein_audit.py --manifest spikein_logs.tsv --out results/qc/spikein1 --equal-amount-confirmed --added-at after_tagmentation
+```
+
+输出保持 `calibration_accepted=False`。须审查实验与参数证据后生成已接受的生物样本尺度因子表，不可仅改标志绕过实验核查。
+
+### Peak caller 诊断
+
+manifest TSV 列为 `sample_id target_bam control_bam`，BAM 路径相对执行目录。输出 MACS2 BAMPE、保留重复下的 IgG 默认缩放、scale-to-large、no-IgG 三种命令；不会自动选择生产结果。
+
+```bash
+python scripts/peak_diagnostics.py --manifest bams.tsv --gsize 2700000000 --out results/qc/caller1
+# 添加 --execute 才执行；诊断参数需在执行前固定并记录。
+```
+
+### Motif 与可视化
+
+目标/背景应预先限定为同一测试宇宙的远端候选区域，脚本不替代区域分类。生成峰中心等长窗口，样本集内贪心排除重叠，背景额外去除目标重叠窗口。默认为 200bp、目标/背景各至少 50 窗口，不足则跳过并记录。
+
+```bash
+python scripts/motif.py --target distal_gain.bed --background distal_tested_other.bed --fasta genome.fa --out results/motif/gain1
+# 添加 --execute 使用 HOMER，并检查 knownResults.txt。
+pixi run -e analysis Rscript scripts/visualize.R results/differential/model1 results/figures/model1
+```
+
+Motif 入口当前固定 vertebrates 已知 motif；其他物种需修改选择。窗口靠近染色体末端的情况须预先用 FASTA 长度核查。HOMER 命令返回 0 也必须有非空 knownResults。可视化生成描述性 PCA、Spearman、火山图和最多 100 峰的行 Z-score 热图；不将该 PCA 称为 VST PCA。
+
+差异阈值现在可通过 `CUTTAG_ALPHA`、`CUTTAG_LFC`、`CUTTAG_MIN_COUNT` 环境变量设置，默认 .05/1/10；完整模型方法文件记录实用值。project.json 的 analysis 阈值不会自动传给独立 R 命令，执行时须同步。
+
+### 最终报告
+
+release.json 含 `project`、`limitations` 字符串数组、`artifacts` 数组。每个 artifact 包含 `path`、可选 `label`、`required`（默认 true）；相对路径基于 release.json 所在目录。生成 HTML 审阅页与 SHA256 清单，缺少必需文件/悬空文件链接即失败。当前产物是审阅索引，未自动复制大文件到交付包，亦未自动验收生物学结论。
+
+```bash
+python scripts/finalize.py --manifest release.json --out results/release/review1
+```
