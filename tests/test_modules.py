@@ -33,3 +33,8 @@ class Audit(unittest.TestCase):
    p=Path(d);(p/'x.tsv').write_text('x');(p/'release.json').write_text(json.dumps({'project':'x','artifacts':[{'path':'x.tsv'}]}))
    subprocess.run(['python3',str(ROOT/'scripts/finalize.py'),'--manifest',str(p/'release.json'),'--out',str(p/'out')],check=True)
    z=json.loads((p/'out/manifest.json').read_text());self.assertEqual(len(z['artifacts'][0]['sha256']),64)
+ def test_workflow_blocks_downstream_after_failure(self):
+  with tempfile.TemporaryDirectory() as d:
+   p=Path(d);(p/'w.json').write_text(json.dumps({'steps':[{'id':'fail','command':['python3','-c','raise SystemExit(3)']},{'id':'downstream','depends_on':['fail'],'command':['python3','-c','print(1)']}]}))
+   r=subprocess.run(['python3',str(ROOT/'scripts/workflow.py'),'--workflow',str(p/'w.json'),'--out',str(p/'out')])
+   self.assertEqual(r.returncode,1);z=json.loads((p/'out/workflow_status.json').read_text());self.assertEqual(z['steps'][1]['state'],'BLOCKED')

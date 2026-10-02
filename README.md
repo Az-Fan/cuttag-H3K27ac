@@ -1,4 +1,4 @@
-# CUT&Tag 项目模板 v0.2.0
+# CUT&Tag 项目模板 v0.3.0
 
 从 ACLY-CUTTAG 两批项目沉淀的独立模板。当前版本提供样本校验、完整 FASTQ 检查、nf-core 运行计划/执行、共识峰、spike-in 计数审计、MACS2 诊断矩阵、片段计数、DESeq2、峰注释、离线 ORA、HOMER motif、统计可视化和交付审阅入口。完整建设规划见 [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md)。
 
@@ -10,7 +10,9 @@
 python3 scripts/cuttag.py validate --allow-missing
 python3 scripts/cuttag.py plan --stage alignment
 # 安装依赖并生成项目自己的锁文件
-pixi install
+pixi install -e default
+# 分析、轨迹和 QC 图表模块
+pixi install -e analysis
 pixi run python scripts/cuttag.py test
 # 将成功的 test run ID 写入 qc.official_test_run_id
 pixi run python scripts/cuttag.py validate
@@ -32,16 +34,18 @@ pixi run python scripts/cuttag.py run --stage production
 
 参见 [docs/SOP.md](docs/SOP.md) 中的文件契约与命令。各模块可独立运行，须用明确的已验收输入。默认实例为 H3K27ac narrow peaks，其他靶标须修改策略。
 
-- `scripts/cuttag.py`：配置与设计校验、FASTQ 完整性/配对/哈希、nf-core 运行计划和日志。
-- `scripts/count_fragments.py`：已验收 BED4 峰集 × 每生物样本 fragment BED 的原始计数。
+- `scripts/cuttag.py`：配置与设计校验、FASTQ 完整性/配对/哈希、nf-core 官方 test、运行计划和生产日志。
+- `scripts/fragments.py`、`scripts/tracks.py`：从 BAM 构建 paired fragment 与 CPM/Spike-in BigWig。`scripts/count_fragments.py`：已验收 BED4 峰集 × 每生物样本 fragment BED 的原始计数。
 - `scripts/differential.R`：独立重复核验、常规或 spike-in size factors、完整结果/模型/MA 图。
-- `scripts/annotate.R`：显式 TxDb SQLite、OrgDb 和 BED 坐标转换。
+- `scripts/consensus.py` 与 `scripts/peak_diagnostics.py`：以独立样本为单位构建共识峰并诊断 MACS2 背景策略。`scripts/qc_atlas.py` 汇总 QC，`scripts/workflow.py` 按显式依赖顺序执行命令。`scripts/annotate.R`：显式 TxDb SQLite、OrgDb 和 BED 坐标转换。
 - `scripts/enrichment.R`：使用明确背景和离线 TERM2GENE 的 ORA。
 
 ## 当前验证范围
 
-10 项 Python 行为测试已通过，所有 R 脚本通过语法检查。Pixi 依赖已成功解析并生成 `pixi.lock`；基础环境安装、合成 DESeq2 和两个源项目的设计登记回放见 [PROJECT_STATUS.md](PROJECT_STATUS.md)。
+11 项 Python 行为测试已通过，所有 R 脚本通过语法检查。Pixi 依赖已成功解析并生成 `pixi.lock`；系统 R 环境中的合成 DESeq2 和两个源项目的设计登记回放见 [PROJECT_STATUS.md](PROJECT_STATUS.md)。
 
 本版本仍是开发版。真实 FASTQ 上的 nf-core 官方/生产流程、外部 HOMER、注释参考与 ORA 资源端到端尚待验证；已有结果与文档不能代替这些验收。
 
 新增模块用法详见 [SOP](docs/SOP.md)：`consensus.py`、`spikein_audit.py`、`peak_diagnostics.py`、`motif.py`、`visualize.R`、`finalize.py`。命令式脚本相互独立，由明确输入契约衔接；目前没有统一自动执行所有下游步骤的编排器。spike-in 全量比对需用审计选定参数运行 Bowtie2，再交日志给审计入口。
+
+paired fragment 生成、CPM/可选 spike-in BigWig 与 QC atlas 模块也已加入；可用 `scripts/workflow.py` 将明确的命令按依赖顺序串联。

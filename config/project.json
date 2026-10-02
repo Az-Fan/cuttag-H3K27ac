@@ -1,5 +1,5 @@
 {
-  "template_version": "0.2.0",
+  "template_version": "0.3.0",
   "project_id": "example_cuttag",
   "assay": "CUTTag",
   "target": "H3K27ac",

@@ -102,3 +102,37 @@ release.json 含 `project`、`limitations` 字符串数组、`artifacts` 数组�
 ```bash
 python scripts/finalize.py --manifest release.json --out results/release/review1
 ```
+
+## paired fragment 和信号轨迹
+
+```bash
+pixi run -e analysis python scripts/fragments.py --bam sample.bam --out results/fragments/sample
+```
+
+脚本保留重复标记的 primary proper pairs，不做 Tn5 shift；MAPQ 阈值同时用于两端，移除 duplicate 需显式传参。BED 依据 proper pair 的 TLEN 还原片段跨度；对异常/零 TLEN 丢弃。需用 samtools flagstat/片段分布抽查和原 pipeline fragments 核对。
+
+信号输入 manifest TSV: `sample_id fragments_bed spikein_scale`。CPM 以保留的 target paired fragments 为分母。可选 spikein_scale 是经审核的 track multiplier（通常为组内几何均数/样本 spike-in fragments）；不能直接把 DESeq2 sizeFactor 当轨迹 multiplier。IGV XML 使用相对 BigWig 路径，genome 元信息需在 IGV 中选相符组装。
+
+```bash
+pixi run -e analysis python scripts/tracks.py --manifest tracks.tsv --sizes genome.fa.fai --out results/signal/run1
+```
+
+## QC atlas 与阶段编排
+
+QC 输入 TSV 列为 `sample_id target_fragments spikein_fraction duplication_rate frip peak_count median_fragment_length`；未知值留空并明确画作 unavailable。该 atlas 是描述性摘要，没有内置通用 PASS/FAIL 阈值。
+
+```bash
+pixi run -e analysis python scripts/qc_atlas.py --metrics qc_metrics.tsv --out results/qc/atlas1
+```
+
+可用 `workflow.py` 顺序运行声明好的命令数组，确保依赖步骤通过后才运行下游；不得以 shell 字符串传命令。每步骤有独立命令/日志/状态，适用于下游整理，不替代 nf-core 的 Nextflow 调度或人工 QC 签核。
+
+如主机的 Pixi 包缓存不可写，使用项目内独立缓存：
+
+```bash
+PIXI_CACHE_DIR="$PWD/shared_cache/pixi_cache" pixi install --locked -e default
+PIXI_CACHE_DIR="$PWD/shared_cache/pixi_cache" pixi install --locked -e analysis
+PIXI_CACHE_DIR="$PWD/shared_cache/pixi_cache" pixi run -e analysis selftest
+```
+
+机器级镜像若持续 TLS 失败，需修正 Pixi mirror 配置或网络链路；不要绕过 TLS 校验。容器和 Nextflow 缓存同样保存在项目的 `shared_cache/`，该目录已忽略且不得提交。
