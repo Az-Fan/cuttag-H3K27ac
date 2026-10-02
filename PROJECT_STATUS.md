@@ -8,7 +8,7 @@
 
 已验证：11 项 Python 行为测试；所有 Python/R 入口语法检查；使用系统已有 DESeq2 在 300 峰、6 个独立合成样本上拟合和可视化，差异方向通过；两批源项目设计登记只读回放通过。第一批 3 vs 3 仍未核实重复来源，第二批 1 vs 1 正确阻止正式推断。
 
-环境：pixi.lock 成功生成。环境安装：lock 解析成功；安装失败于主机 Pixi 配置的 Westlake mirror TLS/隧道连接；绕过镜像后官方频道也遇到 TLS 中断。尚未运行锁定环境中的自测或官方 nf-core test。官方 nf-core test 尚未启动。因此尚未执行模板环境中的官方 nf-core test。
+环境：pixi.lock 成功生成。安装失败于主机 Pixi 配置的 Westlake mirror TLS/隧道连接；绕过镜像后官方频道也遇到 TLS 中断。锁定环境中的自测与官方 nf-core test 尚未运行。
 
 尚待验证：真实 FASTQ 上的官方/生产流程、外部 HOMER、MACS2 诊断、参考注释和 ORA 端到端、BigWig/IGV 可迁移性。
 
