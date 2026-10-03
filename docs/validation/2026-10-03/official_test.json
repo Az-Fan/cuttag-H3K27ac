@@ -1,0 +1,34 @@
+{
+  "state": "REVIEW_REQUIRED",
+  "trace": "results/runs/acceptance_official_network_20261003/output/pipeline_info/execution_trace_2026-10-03_10-49-03.txt",
+  "trace_sha256": "8d82e958b3d48df89ab7980b847df19de44cea4800e83f7cf1187dbf14e7f8c2",
+  "task_count": 135,
+  "task_status_counts": {
+    "COMPLETED": 133,
+    "FAILED": 2
+  },
+  "nonpassing_tasks": [
+    {
+      "task_id": "54",
+      "name": "NFCORE_CUTANDRUN:CUTANDRUN:PRESEQ_LCEXTRAP (h3k27me3_R1)",
+      "status": "FAILED",
+      "exit": "1",
+      "hash": "20/d5de7f"
+    },
+    {
+      "task_id": "56",
+      "name": "NFCORE_CUTANDRUN:CUTANDRUN:PRESEQ_LCEXTRAP (igg_ctrl_R1)",
+      "status": "FAILED",
+      "exit": "1",
+      "hash": "fb/0a6de8"
+    }
+  ],
+  "interpretation": "Nextflow launcher success can include ignored process errors. Review failed attempts, final outcomes and missing QC before scientific acceptance.",
+  "launcher": {
+    "state": "COMPUTATIONAL_PASS",
+    "returncode": 0
+  },
+  "pipeline": "nf-core/cutandrun",
+  "version": "3.2.2",
+  "profile": "test,apptainer"
+}

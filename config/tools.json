@@ -1,0 +1,9 @@
+{
+  "macs2": {
+    "version": "2.2.7.1",
+    "url": "https://depot.galaxyproject.org/singularity/macs2:2.2.7.1--py38h4a8c8d9_3",
+    "path": "shared_cache/apptainer/macs2-2.2.7.1.sif",
+    "sha256": "e7ab647fb7fe7057b99e29c23c727907f079161b4d3fe8938e696c9cda2af6c9",
+    "reason": "Matches the MACS2 version in nf-core/cutandrun 3.2.2; tested BAMPE runtime. Native Bioconda 2.2.9.1 build 5 failed with __log_finite on the acceptance host."
+  }
+}

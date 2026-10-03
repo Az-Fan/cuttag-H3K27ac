@@ -120,7 +120,7 @@ def plan(root,cfg,rows,stage,out):
 def production_gate(root,cfg,config_path):
     if cfg['qc']['upstream_accepted'] is not True:raise ValueError('Accept upstream QC before production')
     decisions=['upstream_accepted','control_strategy_accepted']
-    inputs={'config_sha256':config_path,'samples_sha256':resolve(root,cfg['samples']),'fastq_inventory_sha256':root/'results/qc/fastq_inventory.json'}
+    inputs={'config_sha256':config_path,'samples_sha256':resolve(root,cfg['samples']),'fastq_inventory_sha256':root/'results/qc/fastq_inventory.json','reference_audit_sha256':root/'results/qc/reference_audit.json'}
     sp=cfg['spikein']
     if sp['enabled']:
         if sp['calibration_accepted'] is not True or sp['equal_amount_confirmed'] is not True or not known_text(sp['added_at']):raise ValueError('Spike-in needs equal-input confirmation, known addition stage and accepted calibration')
@@ -132,11 +132,15 @@ def production_gate(root,cfg,config_path):
     return require_review(resolve(root,review),decisions,inputs)
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('command',choices=['validate','inventory','plan','run','test']);p.add_argument('--config',type=Path,default=ROOT/'config/project.json');p.add_argument('--allow-missing',action='store_true');p.add_argument('--stage',choices=['alignment','production'],default='alignment');p.add_argument('--run-id');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('command',choices=['validate','inventory','plan','run','test']);p.add_argument('--config',type=Path,default=ROOT/'config/project.json');p.add_argument('--allow-missing',action='store_true');p.add_argument('--stage',choices=['alignment','production'],default='alignment');p.add_argument('--run-id');p.add_argument('--test-template-params',action='store_true');a=p.parse_args()
+    if a.test_template_params and a.command!='test':p.error('--test-template-params is only valid with test')
     root,cfg,rows=load(a.config);report=validate(root,cfg,rows,a.allow_missing or a.command=='plan' or a.command=='test')
     if a.command=='validate': print(json.dumps(report,indent=2,ensure_ascii=False));return int(bool(report['errors']))
     if report['errors']: raise ValueError('; '.join(report['errors']))
-    if a.command=='inventory': inventory(root,rows,root/'results/qc/fastq_inventory.json');return 0
+    if a.command=='inventory':
+        from reference_audit import audit
+        dump(root/'results/qc/reference_audit.json',audit(root,cfg))
+        inventory(root,rows,root/'results/qc/fastq_inventory.json');return 0
     runid=a.run_id or datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
     if not re.fullmatch(r'[A-Za-z0-9_-]+',runid): raise ValueError('Invalid run ID')
     out=(root/'results/runs'/runid).resolve()
@@ -152,15 +156,20 @@ def main():
         if shutil.disk_usage(root).free < cfg['resources']['min_free_gb']*1024**3: raise ValueError('Insufficient free storage')
     if a.command=='test':
         out.mkdir(parents=True,exist_ok=False)
-        cmd=['nextflow','run',cfg['pipeline']['name'],'-r',cfg['pipeline']['version'],'-profile','test,'+cfg['pipeline']['profile'],'--outdir',str(out/'output'),'-work-dir',str(root/'work'/runid)]
+        cmd=['nextflow','run',cfg['pipeline']['name'],'-r',cfg['pipeline']['version'],'-profile','test,'+cfg['pipeline']['profile'],'--outdir',str(out/'output'),'-work-dir',str(root/'work'/runid),'-with-trace',str(out/'trace.tsv')]
+        if a.test_template_params:
+            params=dict(cfg['nfcore_params']);params.update(normalisation_mode='CPM',only_filtering=False)
+            dump(out/'test_params.json',params);cmd+=['-params-file',str(out/'test_params.json')]
         dump(out/'command.json',cmd)
     else: cmd=plan(root,cfg,rows,a.stage,out)
     print(json.dumps({'run_dir':str(out),'command':cmd,'warnings':report['warnings']},indent=2))
     if a.command=='run':
         try:
+            from reference_audit import audit
+            dump(out/'reference_audit.json',audit(root,cfg))
             inventory(root,rows,out/'fastq_inventory.json')
             if a.stage=='production':
-                require_review(resolve(root,cfg['qc']['production_review']),['upstream_accepted'],{'fastq_inventory_sha256':out/'fastq_inventory.json'})
+                require_review(resolve(root,cfg['qc']['production_review']),['upstream_accepted'],{'fastq_inventory_sha256':out/'fastq_inventory.json','reference_audit_sha256':out/'reference_audit.json'})
         except Exception as e:
             dump(out/'status.json',{'state':'FAILED','stage':'input_integrity','message':str(e)});raise
     if a.command in ('run','test'):
@@ -169,7 +178,9 @@ def main():
         dump(out/'status.json',{'state':'RUNNING','started':datetime.datetime.now(datetime.timezone.utc).isoformat()})
         try:
             with (out/'execution.log').open('w') as f: result=subprocess.run(cmd,cwd=out,env=env,stdout=f,stderr=subprocess.STDOUT)
-            dump(out/'status.json',{'state':'COMPUTATIONAL_PASS' if result.returncode==0 else 'FAILED','returncode':result.returncode})
+            from audit_run import audit
+            task_audit=audit(out);dump(out/'task_audit.json',task_audit)
+            dump(out/'status.json',{'state':'COMPUTATIONAL_PASS' if result.returncode==0 else 'FAILED','returncode':result.returncode,'task_audit_state':task_audit['state'],'scientific_review_required':True})
             return result.returncode
         except Exception as e:
             dump(out/'status.json',{'state':'FAILED','message':str(e)});raise

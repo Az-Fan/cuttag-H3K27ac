@@ -1,0 +1,9 @@
+{
+  "state": "PASS",
+  "scope": "arbitrary test intervals using explicit hg19 TxDb and locked OrgDb; not a biological validation",
+  "tested": [
+    "peak ID order",
+    "BED to GRanges and back",
+    "explicit TxDb and OrgDb loading"
+  ]
+}

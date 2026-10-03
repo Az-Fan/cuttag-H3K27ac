@@ -1,0 +1,11 @@
+{
+  "state": "PASS",
+  "tested": [
+    "conventional DESeq2 direction",
+    "spike-in known size factors",
+    "raw counts divided by expected size factors",
+    "visualization including flat/NA profiles",
+    "offline ORA planted term"
+  ],
+  "scope": "synthetic only; no experimental calibration approval"
+}

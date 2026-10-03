@@ -1,3 +1,5 @@
+> 本文保留 v0.3.1 历史核查。后续缺口的修复与验收状态见 [PROJECT_STATUS](../PROJECT_STATUS.md)、[OPERATIONS](OPERATIONS.md) 和 [OPTION_VALIDATION](OPTION_VALIDATION.md)。
+
 # 完整性、正确性与必要判断核查
 
 核查起点：Git `46e2d24`（v0.3.0）。范围：所有模板脚本、项目配置、文档与既有测试；对照两个来源项目的设计记录，以及本地 nf-core/cutandrun 3.2.2 源码的 spike-in 分支。

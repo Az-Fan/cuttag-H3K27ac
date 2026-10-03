@@ -1,0 +1,3 @@
+sample_id	bam	peaks_bed	bam_policy
+Control1	../results/accepted/Control1.bam	../results/accepted/Control1.narrowPeak	duplicates_retained
+KD1	../results/accepted/KD1.bam	../results/accepted/KD1.narrowPeak	duplicates_retained

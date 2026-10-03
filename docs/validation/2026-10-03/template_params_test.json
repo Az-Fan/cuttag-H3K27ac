@@ -1,0 +1,47 @@
+{
+  "state": "REVIEW_REQUIRED",
+  "trace": "results/runs/acceptance_template_params_20261003/trace.tsv",
+  "trace_sha256": "7965ad2f2c5a4d38a29aae83ec06b9c656b4b9438d36e9007dbe34caa4228959",
+  "task_count": 103,
+  "task_status_counts": {
+    "COMPLETED": 101,
+    "FAILED": 2
+  },
+  "nonpassing_tasks": [
+    {
+      "task_id": "36",
+      "name": "NFCORE_CUTANDRUN:CUTANDRUN:PRESEQ_LCEXTRAP (h3k27me3_R1)",
+      "status": "FAILED",
+      "exit": "1",
+      "hash": "1e/a454ec"
+    },
+    {
+      "task_id": "41",
+      "name": "NFCORE_CUTANDRUN:CUTANDRUN:PRESEQ_LCEXTRAP (igg_ctrl_R1)",
+      "status": "FAILED",
+      "exit": "1",
+      "hash": "15/8fa3df"
+    }
+  ],
+  "interpretation": "Nextflow launcher success can include ignored process errors. Review failed attempts, final outcomes and missing QC before scientific acceptance.",
+  "launcher": {
+    "state": "COMPUTATIONAL_PASS",
+    "returncode": 0,
+    "task_audit_state": "REVIEW_REQUIRED",
+    "scientific_review_required": true
+  },
+  "test_params": {
+    "use_control": true,
+    "dedup_target_reads": false,
+    "remove_linear_duplicates": false,
+    "peakcaller": "macs2",
+    "macs2_narrow_peak": true,
+    "save_trimmed": true,
+    "dump_scale_factors": true,
+    "normalisation_mode": "CPM",
+    "only_filtering": false
+  },
+  "peak_outputs": {
+    "output/03_peak_calling/04_called_peaks/macs2/h3k27me3_R1.macs2_peaks.narrowPeak": 117
+  }
+}

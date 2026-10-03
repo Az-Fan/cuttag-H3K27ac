@@ -1,0 +1,52 @@
+{
+  "state": "PASS",
+  "checks": [
+    {
+      "component": "samtools",
+      "executable": "/home/faz_laptop/projects/CUTTag-project-template/.pixi/envs/analysis/bin/samtools",
+      "state": "PASS",
+      "returncode": 0,
+      "output": "samtools 1.20\nUsing htslib 1.23\nCopyright (C) 2024 Genome Research Ltd.\n\nSamtools compilation details:\n    Features:       build=configure curses=yes \n    CC:             /opt/conda/conda-bld/samtools_1720645213030/_build_env/bin/x86_64-conda-linux-gnu-cc\n    CPPFLAGS:       -DNDEBUG -D_FORTIFY_SOURCE=2 -O2 -isystem /home/faz_laptop/projects/CUTTag-project-template/.pixi/envs/analysis/include\n    CFLAGS:         -Wall -march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -ffunction-sections -pipe -isystem /home/faz_laptop/projects/CUTTag-project-template/.pixi/envs/analysis/include -fdebug-prefix-map=/opt/conda/conda-bld/samtools_1720645213030/work=/usr/local/src/conda/samtools-1.20 -fdebug-prefix-map=/home/faz_laptop/projects/CUTTag-project-template/.pi"
+    },
+    {
+      "component": "bedtools",
+      "executable": "/home/faz_laptop/projects/CUTTag-project-template/.pixi/envs/analysis/bin/bedtools",
+      "state": "PASS",
+      "returncode": 0,
+      "output": "bedtools v2.31.1\n"
+    },
+    {
+      "component": "bowtie2",
+      "executable": "/home/faz_laptop/projects/CUTTag-project-template/.pixi/envs/analysis/bin/bowtie2",
+      "state": "PASS",
+      "returncode": 0,
+      "output": "/home/faz_laptop/projects/CUTTag-project-template/.pixi/envs/analysis/bin/bowtie2-align-s version 2.5.5\n64-bit\nBuilt on runnervmn36qa\nTue Feb 17 04:32:11 UTC 2026\nCompiler: gcc version 14.3.0 (conda-forge gcc 14.3.0-17) \nOptions: -O3 -funroll-loops -g3 -fvisibility-inlines-hidden -fmessage-length=0 -march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -ffunction-sections -pipe -isystem /home/faz_laptop/projects/CUTTag-project-template/.pixi/envs/analysis/include -fdebug-prefix-map=/opt/conda/conda-bld/bowtie2_1771302537514/work=/usr/local/src/conda/bowtie2-2.5.5 -fdebug-prefix-map=/home/faz_laptop/projects/CUTTag-project-template/.pixi/envs/analysis=/usr/local/src/conda-prefix -O3\nSizeof {int, long, long long, void*, size_t, off_t}: {4, 8, 8, 8, 8, 8}\n[W"
+    },
+    {
+      "component": "python_plot_tracks",
+      "executable": "/home/faz_laptop/projects/CUTTag-project-template/.pixi/envs/analysis/bin/python",
+      "state": "PASS",
+      "returncode": 0,
+      "output": "3.9.1 0.3.25\n"
+    },
+    {
+      "component": "R_analysis",
+      "executable": "/home/faz_laptop/projects/CUTTag-project-template/.pixi/envs/analysis/bin/Rscript",
+      "state": "PASS",
+      "returncode": 0,
+      "output": "DESeq2 1.46.0 \nChIPseeker 1.42.0 \nclusterProfiler 4.14.0 \norg.Hs.eg.db 3.20.0 \njsonlite 2.0.0 \ndigest 0.6.39 \n\n\n"
+    },
+    {
+      "component": "macs2_runtime",
+      "executable": "/home/faz_laptop/projects/CUTTag-project-template/.pixi/envs/analysis/bin/apptainer",
+      "state": "PASS",
+      "returncode": 0,
+      "output": "rge value such as 500bps. You can also use '--\n                        cutoff-analysis' option with default setting, and\n                        check the column 'avelpeak' under different cutoff\n                        values to decide a reasonable minlen value.\n  --broad               If set, MACS will try to call broad peaks using the\n                        --broad-cutoff setting. Please tweak '--broad-cutoff'\n                        setting to control the peak calling behavior. At the\n                        meantime, either -q or -p cutoff will be used to\n                        define regions with 'stronger enrichment' inside of\n                        broad peaks. The maximum gap is expanded to 4 * MAXGAP\n                        (--max-gap parameter). As a result, MACS will output "
+    }
+  ],
+  "macs2_container_sha256": "e7ab647fb7fe7057b99e29c23c727907f079161b4d3fe8938e696c9cda2af6c9",
+  "limitations": [
+    "Runtime probes do not replace official nf-core and synthetic fixture acceptance.",
+    "R and Python executable paths/versions are recorded; a system R run does not validate the locked R environment."
+  ]
+}

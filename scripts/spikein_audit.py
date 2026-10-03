@@ -11,10 +11,10 @@ for r in rows:
  if not all((total,zero,one,many)):raise ValueError('Expected paired-end Bowtie2 summary '+str(path))
  n=int(total[1]);count=int(one[1])+int(many[1])
  if n<=0 or int(zero[1])+count!=n:raise ValueError('Pair totals inconsistent')
- result.append({'sample_id':r['sample_id'],'mode':r['mode'],'total_pairs':n,'spikein_fragments':count,'fraction':count/n,'calibration_accepted':False})
+ result.append({'sample_id':r['sample_id'],'mode':r['mode'],'calibration_group':r.get('calibration_group','experiment'),'total_pairs':n,'spikein_fragments':count,'fraction':count/n,'calibration_accepted':False})
 # Multiple modes intentionally kept separate; normalize only within mode across unique samples.
-for mode in {r['mode'] for r in result}:
- z=[r for r in result if r['mode']==mode]
+for mode,group in {(r['mode'],r['calibration_group']) for r in result}:
+ z=[r for r in result if r['mode']==mode and r['calibration_group']==group]
  if len({r['sample_id'] for r in z})!=len(z):raise ValueError('Duplicate sample/mode')
  positive=all(r['spikein_fragments']>0 for r in z)
  gm=math.exp(sum(math.log(r['spikein_fragments']) for r in z)/len(z)) if positive else None

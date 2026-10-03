@@ -69,7 +69,8 @@ class AuditRegressions(unittest.TestCase):
    p=Path(d);(p/'config').mkdir();(p/'results/qc').mkdir(parents=True)
    cfg=copy.deepcopy(self.cfg);cfg['qc'].update(upstream_accepted=True,production_review='review.json')
    config=p/'config/project.json';config.write_text(json.dumps(cfg));(p/'config/samples.tsv').write_text('samples');inventory=p/'results/qc/fastq_inventory.json';inventory.write_text('["original FASTQ hashes"]');(p/'evidence.txt').write_text('Synthetic QC and control review')
-   review={'reviewer':'fixture','reviewed_at':'2026-10-03','reason':'synthetic','decisions':{'upstream_accepted':True,'control_strategy_accepted':True},'inputs':{'config_sha256':sha256(config),'samples_sha256':sha256(p/'config/samples.tsv'),'fastq_inventory_sha256':sha256(inventory)},'evidence':[{'path':'evidence.txt','sha256':sha256(p/'evidence.txt')}]}
+   (p/'results/qc/reference_audit.json').write_text('{}')
+   review={'reviewer':'fixture','reviewed_at':'2026-10-03','reason':'synthetic','decisions':{'upstream_accepted':True,'control_strategy_accepted':True},'inputs':{'config_sha256':sha256(config),'samples_sha256':sha256(p/'config/samples.tsv'),'fastq_inventory_sha256':sha256(inventory),'reference_audit_sha256':sha256(p/'results/qc/reference_audit.json')},'evidence':[{'path':'evidence.txt','sha256':sha256(p/'evidence.txt')}]}
    (p/'review.json').write_text(json.dumps(review));cuttag.production_gate(p,cfg,config)
    inventory.write_text('["replaced FASTQ hashes"]')
    with self.assertRaisesRegex(ValueError,'fastq_inventory_sha256'):cuttag.production_gate(p,cfg,config)

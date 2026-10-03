@@ -37,7 +37,6 @@ environments:
       - conda: https://conda.anaconda.org/bioconda/linux-64/deeptoolsintervals-0.1.9-py311h13f8228_12.conda
       - conda: https://conda.anaconda.org/bioconda/linux-64/homer-4.11-pl5262h4ac6f70_9.tar.bz2
       - conda: https://conda.anaconda.org/bioconda/linux-64/htslib-1.23-h566b1c6_0.conda
-      - conda: https://conda.anaconda.org/bioconda/linux-64/macs2-2.2.9.1-py311haab0aaa_5.conda
       - conda: https://conda.anaconda.org/bioconda/linux-64/py2bit-1.0.1-py311hc303176_0.conda
       - conda: https://conda.anaconda.org/bioconda/linux-64/pybigwig-0.3.25-py311h3a73a1e_0.conda
       - conda: https://conda.anaconda.org/bioconda/linux-64/pysam-0.23.3-py311haeb7863_2.conda
@@ -58,6 +57,7 @@ environments:
       - conda: https://conda.anaconda.org/bioconda/noarch/bioconductor-go.db-3.20.0-r44hdfd78af_0.tar.bz2
       - conda: https://conda.anaconda.org/bioconda/noarch/bioconductor-keggrest-1.46.0-r44hdfd78af_0.tar.bz2
       - conda: https://conda.anaconda.org/bioconda/noarch/bioconductor-matrixgenerics-1.18.0-r44hdfd78af_0.tar.bz2
+      - conda: https://conda.anaconda.org/bioconda/noarch/bioconductor-org.hs.eg.db-3.20.0-r44hdfd78af_0.tar.bz2
       - conda: https://conda.anaconda.org/bioconda/noarch/bioconductor-qvalue-2.38.0-r44hdfd78af_0.tar.bz2
       - conda: https://conda.anaconda.org/bioconda/noarch/bioconductor-summarizedexperiment-1.36.0-r44hdfd78af_0.tar.bz2
       - conda: https://conda.anaconda.org/bioconda/noarch/bioconductor-treeio-1.30.0-r44hdfd78af_0.tar.bz2
@@ -1059,20 +1059,6 @@ packages:
   license_family: MIT
   size: 1197549
   timestamp: 1765902682113
-- conda: https://conda.anaconda.org/bioconda/linux-64/macs2-2.2.9.1-py311haab0aaa_5.conda
-  sha256: 4f8b55a431b372e1a09d4d7fbc6dad2b68cd03ee482d94b21a712353170ba6e3
-  md5: 130a4dcccfbdb39e9181f0465f3ebe18
-  depends:
-  - libgcc >=13
-  - numpy >=1.19.0
-  - numpy >=1.23,<3
-  - python >=3.11,<3.12.0a0
-  - python_abi 3.11.* *_cp311
-  - r-base
-  license: BSD-3-Clause
-  license_family: BSD
-  size: 1414484
-  timestamp: 1759540039173
 - conda: https://conda.anaconda.org/bioconda/linux-64/py2bit-1.0.1-py311hc303176_0.conda
   sha256: fe5486628e3e5a414bf8d31d819f1298f0011fa961ac99d6c145536cff390893
   md5: 995fc3a6df8a01491fcf0d1f929ba347
@@ -1377,6 +1363,20 @@ packages:
   license: Artistic-2.0
   size: 505327
   timestamp: 1734198685067
+- conda: https://conda.anaconda.org/bioconda/noarch/bioconductor-org.hs.eg.db-3.20.0-r44hdfd78af_0.tar.bz2
+  sha256: 5fed2138ec3b0a0367310e9aeda36ed9f4f8a605eeb450eb4e881143ca6732af
+  md5: f1f5e3e4da004ce53c6ca796404c9aa9
+  depends:
+  - bioconductor-annotationdbi >=1.68.0,<1.69.0
+  - bioconductor-data-packages >=20241103
+  - curl
+  - r-base >=4.4,<4.5.0a0
+  license: Artistic-2.0
+  run_exports:
+    weak:
+    - bioconductor-org.hs.eg.db >=3.20.0,<3.21.0a0
+  size: 9049
+  timestamp: 1734931941368
 - conda: https://conda.anaconda.org/bioconda/noarch/bioconductor-qvalue-2.38.0-r44hdfd78af_0.tar.bz2
   sha256: 41264a1aedf63b1d335af56828a7d42f41bbbbac68e107d4e5bfbddfd066cc6e
   md5: 68d6f0e442750f3aab1d71b8f8c4e0bb

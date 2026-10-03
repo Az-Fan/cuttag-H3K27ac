@@ -1,0 +1,46 @@
+{
+  "fasta_sha256": "78a78913d3585570fa28b7cec05e4fcf067c1aaa3740d37a377f2babda70618c",
+  "bowtie2_version": "/home/faz_laptop/projects/CUTTag-project-template/.pixi/envs/analysis/bin/bowtie2-align-s version 2.5.5",
+  "subset_method": "first N matched pairs per sample; 0 means full input",
+  "max_pairs": 20000,
+  "samples": [
+    {
+      "sample_id": "B1_Control_unit1",
+      "pairs_tested": 20000,
+      "tested_fastq_sha256": [
+        "36f85432fd51108fcea6323d3938329c2bf96da03cb0e4b1753c6bdf81da66e4",
+        "e9afc17e340530ae8d2c4ad4cbf77338bb94ff26e0483c657ea7537abaeea793"
+      ],
+      "calibration_group": "B1"
+    },
+    {
+      "sample_id": "B1_KD_unit1",
+      "pairs_tested": 20000,
+      "tested_fastq_sha256": [
+        "b86a27c5bb6f608a0dbf6ab11a587d8346fea6a6cf8b475b0ec869901a0abf98",
+        "da549496bf0ef1a04a7dce1c19a57edb63f94e4bfc88955522e2e9b8f0dd91d1"
+      ],
+      "calibration_group": "B1"
+    },
+    {
+      "sample_id": "B2_Control_unit1",
+      "pairs_tested": 20000,
+      "tested_fastq_sha256": [
+        "3b17d8fa892645494e0d78ffba2815a2629dfd0a9d8439ea92540481b7714b2d",
+        "097d1a9f615b4982d2364ac26017a0eb5031b73169415248646f62af46bf7eba"
+      ],
+      "calibration_group": "B2"
+    },
+    {
+      "sample_id": "B2_KD_unit1",
+      "pairs_tested": 20000,
+      "tested_fastq_sha256": [
+        "227449a3d3f37b4ee23eec63207080c983101b6a2bbdd0a13d80b6911373e2ba",
+        "e11d42c1b4f8b41815a5e8385eddf90117ed7fd2f906935f74a5020fd0ad1105"
+      ],
+      "calibration_group": "B2"
+    }
+  ],
+  "limitations": "Subset sensitivity audit cannot establish full-data calibration or experimental spike-in scope.",
+  "calibration_accepted": false
+}

@@ -1,0 +1,116 @@
+{
+  "state": "PASS",
+  "scope": "local synthetic integration + runtime",
+  "checks": [
+    {
+      "check": "contracts",
+      "returncode": 0,
+      "state": "PASS"
+    },
+    {
+      "check": "runtime",
+      "returncode": 0,
+      "state": "PASS"
+    },
+    {
+      "check": "fragments",
+      "returncode": 0,
+      "state": "PASS"
+    },
+    {
+      "check": "project",
+      "returncode": 0,
+      "state": "PASS"
+    },
+    {
+      "check": "options",
+      "returncode": 0,
+      "state": "PASS"
+    },
+    {
+      "check": "R_models_ORA",
+      "returncode": 0,
+      "state": "PASS"
+    },
+    {
+      "check": "annotation",
+      "returncode": 0,
+      "state": "PASS"
+    },
+    {
+      "check": "motif",
+      "returncode": 0,
+      "state": "PASS"
+    }
+  ],
+  "source_sha256": {
+    "scripts/decisions.py": "d58f04fdb541693c4f1a876b02c92377a03ea5e73e6b161984a10b376ca4be30",
+    "scripts/qc_atlas.py": "36bd0c44606d187b740d65dd88a78826dd4e4c2d0970b1d1e3c19600922a237c",
+    "scripts/visualize.R": "40bc80bdfd7c180f469e5d6ba0f4d1551ea51485e2d7e0373bb81b330e89289b",
+    "scripts/check_model_review.py": "f72c86e6cf12d15d3972840a0f76de1c501e70bf83e13b9a40e37851e40a12d3",
+    "scripts/finalize.py": "a59eae9fb549353a023e28392f36772f877237fa75b4117c75f7faada20c560d",
+    "scripts/count_fragments.py": "a2221ded1113042da644e6c92587ef268dfd57e983fd9f401dd519ac99e84369",
+    "scripts/run_differential.py": "e13368d01593c2bb0decb4091ec5cb5777808ff6579d89b58ea3d39322ee621b",
+    "scripts/enrichment.R": "e491e08959fd3b07a76986eb8c85bb6fc84a5d2f0054f89acbc2aec96e231863",
+    "scripts/doctor.py": "0c63c6eb30b5a704ed3e0f5a00823ae18192b934efd3e08a36b2d35e674fe20e",
+    "scripts/spikein_audit.py": "ef9657271e699d48a2328f81428fa118422a8bb5030ebc949f47287274cab870",
+    "scripts/install_bioc_data.py": "cd0b00c8153cef4534fc3cdb706534b78a3851ebabd50978fb949f15d9a7861c",
+    "scripts/verify_release.py": "e9129be0a4386d7ca82bd05c1d0f93d3feacce7f87925dc574f57bf6c0c86b54",
+    "scripts/annotate.R": "3e45a73c8893162140b4c847200c4ac2fe36dc9a2a2430c34c9a2021947fbf56",
+    "scripts/fetch_tools.py": "1f158491a5aa7898d08b68ac96282188cfe7f20c1d986f55f04d58baa960e4dc",
+    "scripts/motif.py": "f54521ae3f2644bda258e48fe9f4cc13e51834fba3c60827fcfc2220dd890bc6",
+    "scripts/fragments.py": "2de56c799a31ec9b20de745d1cab150fd5e2c0fc455c6d2d64b8ec00684b3ace",
+    "scripts/differential.R": "a603287c25372ae13bd64c5e8910c46f992b73a691c26cba6b6bb8e58fa04a46",
+    "scripts/workflow.py": "dc6891e759d3517c14892a39439085058517897a9021e63ec354a6bdfe9b5d92",
+    "scripts/init_project.py": "a322bb5a1e9b25b68f455cba2e2356303633bdc344bb147c2e63fa972aafe296",
+    "scripts/prepare_review.py": "f114e0e7294b1647835d14720551f376e5971df4fdc5a698d68ba65f35b71a5b",
+    "scripts/tracks.py": "31f3565f269de1b6651fbdaa6365dee563f7ae9e832e713a776e8955ca5c8d36",
+    "scripts/acceptance.py": "068d4428c3f1d53bdebc8864373d6928f7ea73b62e419666bf62f1817aede361",
+    "scripts/consensus.py": "1b702ab69480b58ded824dc8158922a1b58e26823a6b2fb7ef827de42a0d2ac8",
+    "scripts/plan_downstream.py": "aeb16244d8716b9f1d57950f40d4c777724c6b3b19adb4257e32474f03b7d0ad",
+    "scripts/compare_peaks.py": "5d2cd25a537433475312f05ec195d8352a98d9b21197ceaba3b02d06b80be93a",
+    "scripts/audit_run.py": "0bf9860a816601689eb6fea600a8595eac46c17505697cd2c4346a98b1c55859",
+    "scripts/cuttag.py": "3f097dd09b2c3316c59af42fa6061686309a480bef94eee1bf44b870a9261b19",
+    "scripts/peak_diagnostics.py": "e916e31ea345347a4e36dd63a9ffc852253ae65731e8163f6124e3ec681ac6ef",
+    "scripts/spikein_compare.py": "7df21dda0dc7f0c9919325fdfd9435c3545889bdb15c6083f51e4c2e46b9df64",
+    "scripts/reference_audit.py": "b31bf6bd96e0e88c9eb2ec40d7ced65790a1818c02ffbb140d542b61192ccb87",
+    "scripts/import_nfcore.py": "fe8b0d3aa0e11e7bf369dbf9e3113272d35f56edf8b3cccc42f560ac1291d3a5",
+    "scripts/collect_qc.py": "7439de59e90685fe05c3732490502991f6794837a548b51926f82f30e25c8937",
+    "scripts/prepare_universe.py": "d1bf9ca3d62f38cf6106bbed16a7b1931017ad60681ad3d3f90912b821b2d9ad",
+    "scripts/runtime.py": "e6ede08cd24e6bf988f69e7dc6478b2ecab65f63ca1621b524995d4421fb25ea",
+    "tests/test_contracts.py": "b2ee9835c93ee59c01b1c269a2431d641b2709a5506ec7c667f9d4cc613b58c2",
+    "tests/test_maturity.py": "2da144d7b56201e2c0169bc5f5901bbd8496f4ed78d47af067fcaa0053d2a927",
+    "tests/run_motif_fixture.py": "f9fd69877c7471c6fac25b3fd1e49bbb6c020ceb86a8abaf82201a9da383965e",
+    "tests/run_annotation_fixture.py": "df4b1cb85f40fbc5d000eedcd8346257e85d4a98d00f895571118c8c878626c2",
+    "tests/run_options_fixture.py": "491454eab7ca7d3c879f0df7d1d7112dbe76e530e7d4d32e285c5d6d826f929b",
+    "tests/test_modules.py": "828accfb1b934ce6fdca0e8d7177fd9001a0698205fcdb0317f3be97c075432f",
+    "tests/run_project_fixture.py": "a39c98ba8169b9be8c30cb4b0acebdc4a78ea11ed893139000855bc248180ec6",
+    "tests/run_r_fixture.py": "38518d59992d05b827ed3ccee8d959d70d6a459f67597204bd5b5d0863cc5891",
+    "tests/audit_source_designs.py": "f500aa50410f3a6ff04138d9f8d58ef9afc7647291a4072e01234cad2775e430",
+    "tests/test_audit_regressions.py": "b4d3e0416f9cf5c1b7ad19e05007907993dae46f8437aca684550b3ce7f9c90a",
+    "tests/run_fragment_fixture.py": "77218644e6bbcea8f8ff058179aefb6e68b87dafbdd2e9552db4b17e862fb494",
+    "config/tools.json": "8bc7fa437449a79c4de35b6ab5ef90b1b2a2fb798a9fd277f15af73674277b6a",
+    "config/samples.tsv": "4784333a163888081e25c4c2a230d9942b322d8dc0c74712d0b0acb12afe77d8",
+    "config/project.json": "a467f29d7a493d581c4e609f023c8d3b7d93ca785db5cfe18f50bf7ce0c46228",
+    "config/profiles/local.config": "44f85be724d0de3f057f074da4ec1531bc8546786ebdce1ed3b8a7e9852c9e66",
+    "config/profiles/spikein_overlap_diagnostic.config": "40c741d330d12f0dae632f4ef90ee65d769d9b7e707d9feee3b10f1c00103044",
+    "pixi.lock": "cfb9fb2c4ed54c4af406c6f636830fb4185742ba4f04434de8f7c62b01da528d"
+  },
+  "limitations": [
+    "Official nf-core test is separate: scripts/cuttag.py test.",
+    "Synthetic tests do not approve scientific decisions or validate biological performance on a new experiment."
+  ],
+  "evidence_directory": "results/acceptance_v040_final",
+  "followup_validations": [
+    {
+      "state": "PASS",
+      "command": "python3 -m unittest discover -s tests -p test_maturity.py -q",
+      "tests": 18,
+      "reason": "Initialization additionally copies CI and linked validation documents; checked after integrated suite started.",
+      "source_sha256": {
+        "scripts/init_project.py": "ebc7ef0afb3f8036de5100f4afd369c6cc1a3d7bd3c909c718d6c721c873f2ad",
+        "tests/test_maturity.py": "67323e7646d040388b711467bdbad06719d7bcebb19b70047fee3c75643e6cb5"
+      }
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+sample_id	mode	calibration_group	total_pairs	spikein_fragments	fraction	calibration_accepted	size_factor	track_scale_relative
+B1_Control_unit1	end_to_end_no_overlap	B1	20000	0	0.0	False	NA	NA
+B1_Control_unit1	end_to_end_overlap	B1	20000	10782	0.5391	False	1.9602245787523158	0.5101456286383781
+B1_Control_unit1	end_to_end_dovetail	B1	20000	10782	0.5391	False	1.9602245787523158	0.5101456286383781
+B1_Control_unit1	local_overlap	B1	20000	10795	0.53975	False	1.96000944147628	0.5102016239507497
+B1_KD_unit1	end_to_end_no_overlap	B1	20000	0	0.0	False	NA	NA
+B1_KD_unit1	end_to_end_overlap	B1	20000	2806	0.1403	False	0.5101456286383786	1.9602245787523138
+B1_KD_unit1	end_to_end_dovetail	B1	20000	2806	0.1403	False	0.5101456286383786	1.9602245787523138
+B1_KD_unit1	local_overlap	B1	20000	2810	0.1405	False	0.5102016239507501	1.9600094414762788
+B2_Control_unit1	end_to_end_no_overlap	B2	20000	0	0.0	False	NA	NA
+B2_Control_unit1	end_to_end_overlap	B2	20000	10764	0.5382	False	1.9748417658131487	0.5063696835418335
+B2_Control_unit1	end_to_end_dovetail	B2	20000	10764	0.5382	False	1.9748417658131487	0.5063696835418335
+B2_Control_unit1	local_overlap	B2	20000	10781	0.53905	False	1.9756849241778065	0.5061535813541505
+B2_KD_unit1	end_to_end_no_overlap	B2	20000	0	0.0	False	NA	NA
+B2_KD_unit1	end_to_end_overlap	B2	20000	2760	0.138	False	0.506369683541833	1.974841765813151
+B2_KD_unit1	end_to_end_dovetail	B2	20000	2760	0.138	False	0.506369683541833	1.974841765813151
+B2_KD_unit1	local_overlap	B2	20000	2762	0.1381	False	0.506153581354151	1.9756849241778047

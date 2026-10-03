@@ -1,8 +1,10 @@
 """Exercise real DESeq2 on small deterministic overdispersed synthetic counts."""
-import csv,random,subprocess,tempfile,json,hashlib,os,sys
+import csv,random,subprocess,tempfile,json,hashlib,os,sys,argparse,contextlib,math
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];rng=random.Random(513)
-with tempfile.TemporaryDirectory() as d:
+parser=argparse.ArgumentParser();parser.add_argument('--out',type=Path);args=parser.parse_args()
+if args.out:args.out.mkdir(parents=True,exist_ok=False)
+with (contextlib.nullcontext(str(args.out.resolve())) if args.out else tempfile.TemporaryDirectory()) as d:
  p=Path(d);ids=['C1','C2','C3','K1','K2','K3']
  with (p/'counts.tsv').open('w') as f:
   w=csv.writer(f,delimiter='\t');w.writerow(['chrom','end','peak_id','start']+ids)
@@ -32,3 +34,42 @@ with tempfile.TemporaryDirectory() as d:
  assert (p/'figures/diagnostics.pdf').stat().st_size>0
  assert all(r['chrom']=='chr1' and int(r['end'])-int(r['start'])==200 for r in z)
  print('Synthetic DESeq2 and visualization PASS; contrast direction verified')
+
+ # Spike-in branch: explicitly synthetic calibration, known factors and expected normalized values.
+ factors=[1,2,3,1,2,3]
+ with (p/'spikein.tsv').open('w') as f:
+  w=csv.writer(f,delimiter='\t');w.writerow(['sample_id','spikein_fragments','calibration_accepted'])
+  for name,factor in zip(ids,factors):w.writerow([name,1000*factor,'TRUE'])
+ cfg['analysis']['normalization']='spikein'
+ cfg['spikein'].update(enabled=True,identity='synthetic_lambda',fasta='synthetic_lambda.fa',equal_amount_confirmed=True,added_at='synthetic_preparation',calibration_accepted=True,calibration_scope='synthetic known factors only')
+ (p/'config/project.json').write_text(json.dumps(cfg))
+ review['inputs'].update(config_sha256=digest(p/'config/project.json'),spikein_sha256=digest(p/'spikein.tsv'))
+ review['model']['normalization']='spikein';review['spikein']=cfg['spikein']
+ review['decisions'].update(spikein_counting_accepted=True,spikein_calibration_accepted=True)
+ (p/'review_spikein.json').write_text(json.dumps(review))
+ subprocess.run([sys.executable,str(ROOT/'scripts/run_differential.py'),'--config',str(p/'config/project.json'),'--counts',str(p/'counts.tsv'),'--metadata',str(p/'meta.tsv'),'--review',str(p/'review_spikein.json'),'--spikein',str(p/'spikein.tsv'),'--out',str(p/'model_spikein')],check=True)
+ with (p/'model_spikein/size_factors.tsv').open() as f:scales=list(csv.DictReader(f,delimiter='\t'))
+ gm=math.exp(sum(math.log(x) for x in factors)/len(factors))
+ assert all(abs(float(row['size_factor'])-factor/gm)<1e-10 for row,factor in zip(scales,factors))
+ with (p/'counts.tsv').open() as f:raw=next(csv.DictReader(f,delimiter='\t'))
+ with (p/'model_spikein/normalized_counts.tsv').open() as f:normalized=next(csv.DictReader(f,delimiter='\t'))
+ assert all(abs(float(normalized[name])-float(raw[name])/(factor/gm))<1e-7 for name,factor in zip(ids,factors))
+ (p/'universe.txt').write_text(''.join(str(i)+'\n' for i in range(1,201)))
+ (p/'genes.txt').write_text(''.join(str(i)+'\n' for i in range(1,21)))
+ (p/'term2gene.tsv').write_text('term\tgene\n'+''.join('planted\t'+str(i)+'\n' for i in range(1,21))+''.join('background\t'+str(i)+'\n' for i in range(81,101)))
+ subprocess.run(['Rscript',str(ROOT/'scripts/enrichment.R'),str(p/'genes.txt'),str(p/'universe.txt'),str(p/'term2gene.tsv'),str(p/'ora.tsv')],check=True)
+ with (p/'ora.tsv').open() as f:terms=list(csv.DictReader(f,delimiter='\t'))
+ assert any(r['ID']=='planted' and float(r['p.adjust'])<.001 for r in terms)
+
+ print('PASS: conventional + spike-in DESeq2, known factors and normalization algebra, offline ORA')
+
+ # Flat profiles / no finite adjusted tests must yield explicit unavailable panels.
+ (p/'flat_model').mkdir()
+ rcode='suppressPackageStartupMessages(library(DESeq2)); a<-commandArgs(TRUE); d<-readRDS(a[1]); counts(d)[]<-1L; sizeFactors(d)<-rep(1,ncol(d)); saveRDS(d,a[2]); z<-read.delim(a[3]); z$padj<-NA_real_; write.table(z,a[4],sep="\\t",quote=FALSE,row.names=FALSE)'
+ subprocess.run(['Rscript','-e',rcode,str(p/'model/model.rds'),str(p/'flat_model/model.rds'),str(p/'model/complete.tsv'),str(p/'flat_model/complete.tsv')],check=True)
+ subprocess.run(['Rscript',str(ROOT/'scripts/visualize.R'),str(p/'flat_model'),str(p/'flat_figures')],check=True)
+ assert 'PCA unavailable' in (p/'flat_figures/unavailable_diagnostics.txt').read_text()
+ assert 'Volcano unavailable' in (p/'flat_figures/unavailable_diagnostics.txt').read_text()
+ print('PASS: flat profiles and all-NA adjusted tests produce explicit diagnostic gaps')
+
+ (p/'acceptance.json').write_text(json.dumps({'state':'PASS','tested':['conventional DESeq2 direction','spike-in known size factors','raw counts divided by expected size factors','visualization including flat/NA profiles','offline ORA planted term'],'scope':'synthetic only; no experimental calibration approval'},indent=2))

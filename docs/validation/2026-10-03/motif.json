@@ -1,0 +1,8 @@
+{
+  "state": "PASS",
+  "tested": [
+    "known motif runtime",
+    "insufficient windows skip"
+  ],
+  "scope": "random DNA; no asserted motif enrichment"
+}

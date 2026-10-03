@@ -8,7 +8,9 @@ p=argparse.ArgumentParser();p.add_argument('--config',required=True,type=Path);p
 if a.out.exists():p.error('Review already exists; use a new path')
 root,cfg,_=load(a.config);inputs={'config_sha256':sha256(a.config),'samples_sha256':sha256(resolve(root,cfg['samples']))}
 keys=['upstream_accepted','control_strategy_accepted'] if a.kind=='production' else ['upstream_accepted','peaks_accepted','replicates_confirmed','simple_design_accepted']
-if a.kind=='production':inputs['fastq_inventory_sha256']=sha256(root/'results/qc/fastq_inventory.json')
+if a.kind=='production':
+ inputs['fastq_inventory_sha256']=sha256(root/'results/qc/fastq_inventory.json')
+ inputs['reference_audit_sha256']=sha256(root/'results/qc/reference_audit.json')
 if a.kind=='model':
  if not a.counts or not a.metadata:p.error('Model review needs counts and metadata')
  inputs.update(counts_sha256=sha256(a.counts),metadata_sha256=sha256(a.metadata))

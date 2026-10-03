@@ -1,0 +1,63 @@
+{
+  "state": "PASS",
+  "scope": "synthetic software correctness, not real-sample strategy acceptance",
+  "fragment_policies": [
+    {
+      "mapq": 20,
+      "remove_duplicates": false,
+      "expected": 3,
+      "observed": 3,
+      "state": "PASS"
+    },
+    {
+      "mapq": 20,
+      "remove_duplicates": true,
+      "expected": 2,
+      "observed": 2,
+      "state": "PASS"
+    },
+    {
+      "mapq": 30,
+      "remove_duplicates": false,
+      "expected": 2,
+      "observed": 2,
+      "state": "PASS"
+    },
+    {
+      "mapq": 30,
+      "remove_duplicates": true,
+      "expected": 1,
+      "observed": 1,
+      "state": "PASS"
+    }
+  ],
+  "peak_methods": [
+    {
+      "sample_id": "s1",
+      "strategy": "igg_default",
+      "state": "COMPUTATIONAL_PASS",
+      "interpretation": "diagnostic sensitivity comparison; production acceptance required",
+      "container_sha256": "e7ab647fb7fe7057b99e29c23c727907f079161b4d3fe8938e696c9cda2af6c9",
+      "returncode": 0,
+      "peak_count": 3
+    },
+    {
+      "sample_id": "s1",
+      "strategy": "igg_scale_large",
+      "state": "COMPUTATIONAL_PASS",
+      "interpretation": "diagnostic sensitivity comparison; production acceptance required",
+      "container_sha256": "e7ab647fb7fe7057b99e29c23c727907f079161b4d3fe8938e696c9cda2af6c9",
+      "returncode": 0,
+      "peak_count": 3
+    },
+    {
+      "sample_id": "s1",
+      "strategy": "no_igg_diagnostic",
+      "state": "COMPUTATIONAL_PASS",
+      "interpretation": "diagnostic sensitivity comparison; production acceptance required",
+      "container_sha256": "e7ab647fb7fe7057b99e29c23c727907f079161b4d3fe8938e696c9cda2af6c9",
+      "returncode": 0,
+      "peak_count": 3
+    }
+  ]
+}

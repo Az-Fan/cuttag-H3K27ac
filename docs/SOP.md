@@ -1,3 +1,7 @@
+# 模块 SOP
+
+当前初始化、环境、自动计划、续跑和交付说明以 [OPERATIONS.md](OPERATIONS.md) 为准；可选方案证据见 [OPTION_VALIDATION.md](OPTION_VALIDATION.md)。
+
 # 执行与验收 SOP
 
 ## 输入与环境
@@ -64,7 +68,7 @@ python scripts/consensus.py --manifest peaks.tsv --blacklist blacklist.bed --out
 
 ### spike-in 审计
 
-manifest 为 TSV：`sample_id mode bowtie2_log`。同一模式同一样本只能一行；log 相对于 manifest 目录解析。统计 concordantly exactly 1 与 >1 的 paired fragments；多重比对仍在计数中，报告要求审核 MAPQ/多重比对规则。不要把不同 read 子集、技术拆分单位与合并后生物样本混在同一校准集合。
+manifest 为 TSV：`sample_id mode bowtie2_log`，可加 `calibration_group`，不同组分别计算相对系数。同一模式同一样本只能一行；log 相对于 manifest 目录解析。统计 concordantly exactly 1 与 >1 的 paired fragments；多重比对仍在计数中，报告要求审核 MAPQ/多重比对规则。不要把不同 read 子集、技术拆分单位与合并后生物样本混在同一校准集合。
 
 ```bash
 python scripts/spikein_audit.py --manifest spikein_logs.tsv --out results/qc/spikein1 --equal-amount-confirmed --added-at after_tagmentation
@@ -74,7 +78,7 @@ python scripts/spikein_audit.py --manifest spikein_logs.tsv --out results/qc/spi
 
 ### Peak caller 诊断
 
-manifest TSV 列为 `sample_id target_bam control_bam`，BAM 路径相对执行目录。输出 MACS2 BAMPE、保留重复下的 IgG 默认缩放、scale-to-large、no-IgG 三种命令；不会自动选择生产结果。
+manifest TSV 列为 `sample_id target_bam control_bam`，BAM 路径相对 manifest 所在目录。输出 MACS2 BAMPE、保留重复下的 IgG 默认缩放、scale-to-large、no-IgG 三种命令；不会自动选择生产结果。
 
 ```bash
 python scripts/peak_diagnostics.py --manifest bams.tsv --gsize 2700000000 --out results/qc/caller1
@@ -97,7 +101,7 @@ Motif 入口当前固定 vertebrates 已知 motif；其他物种需修改选择�
 
 ### 最终报告
 
-release.json 含 `project`、`limitations` 字符串数组、`artifacts` 数组。每个 artifact 包含 `path`、可选 `label`、`required`（默认 true）；相对路径基于 release.json 所在目录。生成 HTML 审阅页与 SHA256 清单，缺少必需文件/悬空文件链接即失败。当前产物是审阅索引，未自动复制大文件到交付包，亦未自动验收生物学结论。
+release.json 含 `project`、`limitations` 字符串数组、`artifacts` 数组。每个 artifact 包含 `path`、可选 `label`、`required`（默认 true）；相对路径基于 release.json 所在目录。生成 HTML 审阅页与 SHA256 清单，缺少必需文件/悬空文件链接即失败。现在会实际复制所选文件/目录并修复包内 IGV 路径，可用 verify_release.py 在搬迁后重新校验；科学状态仍为 REVIEW_REQUIRED。
 
 ```bash
 python scripts/finalize.py --manifest release.json --out results/release/review1
@@ -150,8 +154,13 @@ python scripts/run_differential.py --config config/project.json --counts counts.
 
 生成器只绑定当前内容哈希，所有接受字段初始为 false。审核者填写 reviewer、reviewed_at、reason，并根据证据填写 decisions；记录存在不等于接受。先在 config 填好 production_review 路径和已经作出的实验/QC 决策，再生成其审核文件，避免生成后改配置使哈希失效。改变 inputs、证据文件或模型/阈值后需要新的审核，不能复用旧记录。
 
-生产审核还绑定 results/qc/fastq_inventory.json；执行前新生成的 FASTQ 清单必须与已审核清单哈希一致，因此相同路径下的数据替换也会失效。生产决定含 upstream_accepted、control_strategy_accepted；模型决定含 upstream_accepted、peaks_accepted、replicates_confirmed、simple_design_accepted。校准分析另需 spikein_counting_accepted、spikein_calibration_accepted、等量加入前提、加入时点和 calibration_scope；模型记录绑定 spikein_sha256。当前只实现等量 spike-in 和 ~condition，不支持时拒绝执行。
+生产审核还绑定 results/qc/fastq_inventory.json 和 results/qc/reference_audit.json；执行前新生成的 FASTQ 清单必须与已审核清单哈希一致，因此相同路径下的数据替换也会失效。生产决定含 upstream_accepted、control_strategy_accepted；模型决定含 upstream_accepted、peaks_accepted、replicates_confirmed、simple_design_accepted。校准分析另需 spikein_counting_accepted、spikein_calibration_accepted、等量加入前提、加入时点和 calibration_scope；模型记录绑定 spikein_sha256。当前只实现等量 spike-in 和 ~condition，不支持时拒绝执行。
 
 直接 differential.R 调用的最后一个参数现在必须是 review.json；它核对 counts/metadata/spikein 哈希、对比/归一化/阈值、审核字段和证据文件。配置化 Python 入口另外核对 config 哈希和配置中的生物样本映射。原始输入检查现在由真实 run 自动执行，不只检查文件存在。
 
 workflow 可给每步指定 outputs 文件列表；任一缺失即算失败并拦截依赖。未声明 outputs 的通用命令只具有退出码检查，不应把它说成通过了产物完整性验收。
+
+
+## v0.4.0 行为更新
+
+`finalize.py` 现在实际复制产物并生成可点击导航，不再只是绝对路径索引。`workflow.py --resume` 会校验已声明输入和产物哈希。`peak_diagnostics.py` 默认使用 tools.json 固定容器，先运行 fetch_tools.py。`collect_qc.py` 从 fragments/peaks 产生 QC 表，`prepare_universe.py` 从完整统计结果和峰注释准备 ORA/motif 背景；操作细节见 OPERATIONS。
