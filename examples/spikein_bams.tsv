@@ -1,0 +1,4 @@
+sample_id	biological_sample_id	unit_id	condition	group	role	calibration_group	bam
+Control1	Control1	Control1_lane1	Control	Control_H3K27ac	target	prep_A	data/spikein/Control1.lambda.bam
+KD1	KD1	KD1_lane1	KD	KD_H3K27ac	target	prep_A	data/spikein/KD1.lambda.bam
+IgG1	IgG1	IgG1_lane1	IgG	IgG	control	prep_A	data/spikein/IgG1.lambda.bam

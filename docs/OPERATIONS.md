@@ -60,7 +60,30 @@ pixi run -e analysis python scripts/workflow.py --workflow results/downstream_01
   --out results/execution_01 --resume
 ```
 
-自动计划包含参考审核、每样本 paired fragments、共识峰、原始计数、同一 master peak universe 的 QC、CPM BigWig/IGV。支持 `--mapq` 和 `--fraction` 生成新的敏感性运行。不会自动进入正式差异分析：先审阅 QC/峰/重复独立性，再执行 prepare_review.py 和 run_differential.py。Spike-in 轨迹仍需独立的系数审核，不从试跑结果自动套用。
+自动计划包含参考审核、每样本 paired fragments、共识峰、原始计数、同一 master peak universe 的 QC、CPM BigWig/IGV。单次计划支持 `--mapq`、`--fraction` 和 `--remove-duplicates`。不会自动进入正式差异分析：先审阅 QC/峰/重复独立性，再执行 prepare_review.py 和 run_differential.py。Spike-in 轨迹仍需独立的系数审核，不从试跑结果自动套用。
+
+### 生成并比较下游方案矩阵
+
+先为每种已运行的 peak calling 方案准备一个 artifact TSV；每份表必须包含完全相同的生物样本 ID，且目标 BAM 保留 duplicate flags。`examples/strategy_matrix.json` 演示如何声明峰集及下游候选轴。候选数量是各轴组合数乘以 artifact set 数，默认最多 48 项，避免意外展开过大的网格。
+
+```bash
+pixi run -e analysis python scripts/strategy_matrix.py \
+  --config config/project.json --matrix examples/strategy_matrix.json \
+  --out results/strategy_matrix_plan_01
+# 审核 strategy_matrix.json 和各候选 workflow.json 后再执行
+pixi run -e analysis python scripts/strategy_matrix.py \
+  --config config/project.json --matrix examples/strategy_matrix.json \
+  --out results/strategy_matrix_run_01 --execute
+pixi run -e analysis python scripts/compare_strategy_matrix.py \
+  --matrix results/strategy_matrix_run_01/strategy_matrix.json \
+  --out results/strategy_comparison_01
+```
+
+矩阵执行中断且配置、矩阵、artifact 表均未变化时，在同一输出目录加 `--resume --execute` 继续；成功的候选按哈希跳过，已失败的候选仍保留失败证据，修复原因后请用新输出目录重跑。
+
+比较报告在完成候选峰的 pooled union 上重新计算 FRiP，另列每种方案自己的峰数、宽度和覆盖度，并计算 master intervals 的两两覆盖一致性。该 pooled union 只用于固定评价区间，不取代各方案自己的 QC、重复一致性或实验判断。失败候选会保留状态；未完成的候选不会伪装成零值。
+
+正式差异模型仍需逐个完成审核和运行。将审核过的 DE complete tables 登记到 `candidate_id / normalization / result_tsv / review_json` 表，再运行 `compare_models.py`；它要求模型使用相同对比、设计和过滤阈值，并报告坐标匹配率、log2FC 相关性及方向/显著性变化。互相重叠的 peak universe 使用一对一双向覆盖匹配。此报告不选择归一化或 peak caller；spike-in 是否可解释仍需结合加样证据和校准范围。
 
 续跑会校验源代码、配置、锁文件、声明输入、依赖、解释器和成功产物的哈希。变化时要求新建计划与产物目录。失败步骤若留下任何声明产物，不覆盖重跑；保留失败证据，用新目录运行。没有自动删除原始数据或清理工作目录的功能。
 

@@ -1,4 +1,4 @@
-# v0.4.1 验收状态
+# v0.5.0 开发状态
 
 本版已形成可复用的项目操作闭环：初始化 → 环境与参考检查 → nf-core 上游 → 审核 → 自动下游计划 → 模型/注释/富集/motif → 可搬迁交付。采用分阶段审核，不会为追求一键运行而自动接受生物重复、IgG、spike-in 或统计模型。
 
@@ -16,9 +16,13 @@
 - 实际复制交付文件、相对 IGV 路径、可点击入口、搬迁后的哈希验证。
 - blacklist 默认逐碱基扣除，另有 whole-interval-drop 敏感性开关；consensus 支持 reproducible-union 与 support-core 两种可比较定义。
 - spike-in-only BAM 正式 fragment counter：proper primary pair、双端 MAPQ20/30、参考字典约束、技术 unit 到 biological sample 汇总和按校准组系数；另有竞争参考跨映射审计。Bowtie2 summary 明确只属诊断。
-- peak caller sensitivity 现在覆盖 narrow/broad × 默认 IgG / scale-to-large / no-IgG，共 6 组合；轨迹输入禁止部分样本 spike-in、部分 CPM。
+- peak caller sensitivity 覆盖 narrow/broad × 默认 IgG / scale-to-large / no-IgG × keep-dup all/auto，共 12 组合；轨迹输入禁止部分样本 spike-in、部分 CPM。
+- 新增方案矩阵：多个 caller/background artifact sets 可与 MAPQ、duplicate、consensus fraction、peak universe 组合；每个候选保存独立 DAG、状态和输入哈希，矩阵可在配置/输入不变时续跑。
+- 新增固定 pooled candidate peak union 的 FRiP、重复样本 raw-count correlation、master interval overlap 对照报告；新增经过审核的 DE complete tables 的 reciprocal-overlap/LFC/direction 对照入口。
+- Spike-in formal manifest 强制填写 calibration_group；目标组内仅 target 生物样本参与 size factor，单独输出 target biological count 表；QNAME 分组使用 samtools collate 流式处理，未比对 pair 纳入竞争比对分类。
+- MACS2 诊断允许仅 no-IgG 运行，并支持显式选择 shape/background/`keep-dup all|auto` 网格。
 
-## 已有验收证据
+## v0.4.1 历史验收证据
 
 - 44 项 Python 契约/回归测试通过，包括技术拆分、审核失效、参考不兼容、错误坐标、缺失文件、续跑污染、适配器样本映射、校准组隔离和共识支持度网格。
 - 最终本机集成套件 8/8 通过（含 44 项契约测试），在 Pixi 分析环境运行：真实微型 BAM/fragment/count/BigWig；干净新项目 DAG 与搬迁交付；4 组 MAPQ/重复设置；3 种 MACS2 控制策略；2 种 DESeq2 归一化、ORA、显式 TxDb/OrgDb 注释、HOMER；无变化信号/无有效 padj 的绘图降级也通过。
@@ -38,5 +42,11 @@
 4. IgG 策略、去重、MAPQ、共识支持度和归一化在具体项目上的优劣，需要真实数据的位点检查、重复一致性与敏感性比较。软件验收不能代替该判断。
 5. 显式输入适配器的布局契约已有测试；跨所有 nf-core 参数/版本的自动识别、原两批全量重新分析、de novo motif/GSEA、多个峰调用器与全部组合的性能比较，不在本版已验收声明内。
 6. 交付包仅验证文件及链接资源，仍标记 REVIEW_REQUIRED。没有执行破坏性清理，也不会自动删除原始数据。
+
+## v0.5.0 本机验收
+
+- Pixi 分析环境下 `acceptance.py` 9/9 通过，其中包括 52 项 Python 单元/契约测试、spike-in BAM/竞争比对、真实微型下游方案矩阵 DAG、固定 pooled-union FRiP 比较、MACS2 12 种 shape/background/duplicate 组合、两种 DESeq2 归一化、注释和 motif fixture。完整摘要及脚本哈希见 [本版验收记录](docs/validation/2026-10-04/local_acceptance.json)。
+- 新 matrix 支持候选计划登记、逐项运行、单候选失败保留和输入/模板未变化后的续跑。模型比较 fixture 核实了审核标志、相同设计/阈值/样本元数据哈希以及区域效应与方向变化汇总。
+- 上述均为软件/合成数据验收。peak caller 候选需由用户在真实数据上执行并审核；DE 稳定性需要人工审核并正式运行每个模型。复杂/批次/配对设计仍未纳入正式模型矩阵。
 
 运行步骤：[OPERATIONS](docs/OPERATIONS.md)；方法与审核：[SOP](docs/SOP.md)；历史缺陷审计：[AUDIT](docs/AUDIT.md)。

@@ -1,4 +1,4 @@
-# CUT&Tag 项目模板 v0.4.1
+# CUT&Tag 项目模板 v0.5.0
 
 从 ACLY-CUTTAG 两批项目沉淀的独立模板，面向 paired-end H3K27ac：提供上游运行、科学审核停点、可续跑下游、可选方案对照和可搬迁交付。支持范围及操作步骤见 [操作指南](docs/OPERATIONS.md)，方法细节见 [SOP](docs/SOP.md)。
 
@@ -51,6 +51,12 @@ pixi run -e analysis python scripts/workflow.py --workflow results/downstream_01
 ```
 
 生成原始片段计数、同一峰宇宙的 FRiP/片段长度 QC、CPM BigWig 与 IGV。`--resume` 只复用哈希一致的成功步骤；变化或已有失败产物要求新目录。正式差异分析仍经 `prepare_review.py` / `run_differential.py` 审核入口，不会自动接受样本、峰策略或校准。
+
+### 方案矩阵与比较
+
+为每个候选峰集准备一个 `sample_id / bam / peaks_bed / bam_policy` manifest，并在 `examples/strategy_matrix.json` 声明候选峰集及 MAPQ、去重、共识支持度和 universe 方案。先生成所有工作流计划，再审核矩阵规模；确认后可用 `--execute` 逐项运行。使用 `compare_strategy_matrix.py` 在候选峰集的固定 pooled-union 区间上汇总 FRiP、峰覆盖和候选间区间重叠。
+
+正式模型审核并运行后，可用 `compare_models.py` 比较 conventional/spike-in 或不同已审核 universe 的区域效应。它按双向覆盖比例进行一对一区域匹配，汇总 log2FC 相关性和方向/显著性变化；结果用于审核，不自动挑选赢家。命令和输入格式见 [操作指南](docs/OPERATIONS.md)。
 
 ## 必须保留的判断
 

@@ -38,8 +38,8 @@ with (contextlib.nullcontext(str(args.out.resolve())) if args.out else tempfile.
  # Spike-in branch: explicitly synthetic calibration, known factors and expected normalized values.
  factors=[1,2,3,1,2,3]
  with (p/'spikein.tsv').open('w') as f:
-  w=csv.writer(f,delimiter='\t');w.writerow(['sample_id','spikein_fragments','calibration_accepted'])
-  for name,factor in zip(ids,factors):w.writerow([name,1000*factor,'TRUE'])
+  w=csv.writer(f,delimiter='\t');w.writerow(['sample_id','spikein_fragments','calibration_accepted','calibration_group'])
+  for name,factor in zip(ids,factors):w.writerow([name,1000*factor,'TRUE','prepA'])
  cfg['analysis']['normalization']='spikein'
  cfg['spikein'].update(enabled=True,identity='synthetic_lambda',fasta='synthetic_lambda.fa',equal_amount_confirmed=True,added_at='synthetic_preparation',calibration_accepted=True,calibration_scope='synthetic known factors only')
  (p/'config/project.json').write_text(json.dumps(cfg))
@@ -48,6 +48,18 @@ with (contextlib.nullcontext(str(args.out.resolve())) if args.out else tempfile.
  review['decisions'].update(spikein_counting_accepted=True,spikein_calibration_accepted=True)
  (p/'review_spikein.json').write_text(json.dumps(review))
  subprocess.run([sys.executable,str(ROOT/'scripts/run_differential.py'),'--config',str(p/'config/project.json'),'--counts',str(p/'counts.tsv'),'--metadata',str(p/'meta.tsv'),'--review',str(p/'review_spikein.json'),'--spikein',str(p/'spikein.tsv'),'--out',str(p/'model_spikein')],check=True)
+ spike_rows=list(csv.DictReader((p/'spikein.tsv').open(),delimiter='\t'))
+ spike_rows[-1]['calibration_group']='prepB'
+ with (p/'spikein.tsv').open('w') as f:
+  w=csv.DictWriter(f,fieldnames=list(spike_rows[0]),delimiter='\t');w.writeheader();w.writerows(spike_rows)
+ blocked=subprocess.run([sys.executable,str(ROOT/'scripts/run_differential.py'),'--config',str(p/'config/project.json'),'--counts',str(p/'counts.tsv'),'--metadata',str(p/'meta.tsv'),'--review',str(p/'review_spikein.json'),'--spikein',str(p/'spikein.tsv'),'--out',str(p/'model_mixed_calibration')],capture_output=True,text=True)
+ assert blocked.returncode!=0 and 'one shared calibration_group' in blocked.stderr,blocked.stderr
+ spike_rows=list(csv.DictReader((p/'spikein.tsv').open(),delimiter='\t'))
+ spike_rows[-1]['calibration_group']='prepB'
+ with (p/'spikein.tsv').open('w') as f:
+  w=csv.DictWriter(f,fieldnames=list(spike_rows[0]),delimiter='\t');w.writeheader();w.writerows(spike_rows)
+ blocked=subprocess.run([sys.executable,str(ROOT/'scripts/run_differential.py'),'--config',str(p/'config/project.json'),'--counts',str(p/'counts.tsv'),'--metadata',str(p/'meta.tsv'),'--review',str(p/'review_spikein.json'),'--spikein',str(p/'spikein.tsv'),'--out',str(p/'model_mixed_calibration')],capture_output=True,text=True)
+ assert blocked.returncode!=0 and 'one shared calibration_group' in blocked.stderr,blocked.stderr
  with (p/'model_spikein/size_factors.tsv').open() as f:scales=list(csv.DictReader(f,delimiter='\t'))
  gm=math.exp(sum(math.log(x) for x in factors)/len(factors))
  assert all(abs(float(row['size_factor'])-factor/gm)<1e-10 for row,factor in zip(scales,factors))

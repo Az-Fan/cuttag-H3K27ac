@@ -36,6 +36,18 @@ env=os.environ.copy();env['MPLCONFIGDIR']=str(a.out/'shared_cache/matplotlib')
 subprocess.run(command,check=True,env=env)
 subprocess.run(command+['--resume'],check=True,env=env)
 assert all(r['resumed'] for r in json.loads((a.out/'results/execution/workflow_status.json').read_text())['steps'])
+# Exercise the new strategy-matrix planner/executor and fixed-universe comparator end to end.
+(fixture/'matrix.json').write_text(json.dumps({'baseline_candidate':'fixture_q20_keepdup_f0p6667_support_core_subtract_w1',
+ 'artifact_sets':[{'id':'fixture','manifest':'artifacts.tsv'}], 'axes':{'mapq':[20,30]}}))
+matrix_out=a.out/'results/strategy_matrix'
+subprocess.run([sys.executable,str(a.out/'scripts/strategy_matrix.py'),'--config',str(a.out/'config/project.json'),
+ '--matrix',str(fixture/'matrix.json'),'--out',str(matrix_out),'--execute'],check=True,env=env)
+matrix_report=json.loads((matrix_out/'strategy_matrix.json').read_text())
+assert len(matrix_report['candidates'])==2 and all(x['state']=='COMPUTATIONAL_PASS' for x in matrix_report['candidates'])
+comparison=a.out/'results/strategy_comparison'
+subprocess.run([sys.executable,str(a.out/'scripts/compare_strategy_matrix.py'),'--matrix',str(matrix_out/'strategy_matrix.json'),
+ '--out',str(comparison)],check=True,env=env)
+assert len(json.loads((comparison/'comparison.json').read_text())['pairwise_peak_agreement'])==1
 release={'project':'synthetic_acceptance','limitations':['Artificial paired fragments; no biological conclusions.'], 'artifacts':[{'path':'results/downstream/counts.tsv','destination':'tables/counts.tsv'},{'path':'results/downstream/qc_atlas','destination':'qc'},{'path':'results/downstream/tracks','destination':'tracks'},{'path':'results/downstream/handoff.json','destination':'handoff.json'}]}
 (a.out/'release.json').write_text(json.dumps(release))
 subprocess.run([sys.executable,str(a.out/'scripts/finalize.py'),'--manifest',str(a.out/'release.json'),'--out',str(a.out/'results/delivery')],check=True)

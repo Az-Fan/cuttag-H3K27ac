@@ -27,7 +27,7 @@ m$condition<-factor(m$condition,levels=c(a[4],a[3])); keep<-rowSums(k)>=min_coun
 if(!any(keep)) stop('No peaks pass count filter')
 dds<-DESeqDataSetFromMatrix(k[keep,,drop=FALSE],m,~condition)
 if(a[6]=='spikein') {
- s<-read.delim(a[7]);stopifnot(all(c('sample_id','spikein_fragments','calibration_accepted') %in% names(s)),!anyDuplicated(s$sample_id),setequal(s$sample_id,m$sample_id));s<-s[match(m$sample_id,s$sample_id),];stopifnot(identical(s$sample_id,m$sample_id),all(is.finite(s$spikein_fragments)),all(s$spikein_fragments>0),all(s$calibration_accepted==TRUE))
+ s<-read.delim(a[7]);stopifnot(all(c('sample_id','spikein_fragments','calibration_accepted','calibration_group') %in% names(s)),!anyDuplicated(s$sample_id),setequal(s$sample_id,m$sample_id));s<-s[match(m$sample_id,s$sample_id),];stopifnot(identical(s$sample_id,m$sample_id),all(is.finite(s$spikein_fragments)),all(s$spikein_fragments>0),all(s$calibration_accepted==TRUE),!anyNA(s$calibration_group),length(unique(s$calibration_group))==1)
  sizeFactors(dds)<-s$spikein_fragments/exp(mean(log(s$spikein_fragments)))
 } else if(a[6]!='conventional') stop('Unknown normalization')
 if(dir.exists(a[5])) stop('Output exists; choose new model directory')

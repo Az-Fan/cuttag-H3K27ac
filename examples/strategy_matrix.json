@@ -1,0 +1,17 @@
+{
+  "baseline_candidate": "macs2_default_q20_keepdup_f0p6667_support_core_subtract_w1",
+  "artifact_sets": [
+    {
+      "id": "macs2_default",
+      "manifest": "artifacts.tsv"
+    }
+  ],
+  "axes": {
+    "mapq": [20, 30],
+    "remove_duplicates": [false, true],
+    "fraction": [0.6667, 1.0],
+    "universe": ["support_core", "reproducible_union"],
+    "blacklist_mode": ["subtract"],
+    "min_width": [1]
+  }
+}

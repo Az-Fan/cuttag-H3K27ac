@@ -48,11 +48,13 @@ def fasta_sizes(path):
 def read_manifest(path):
     with Path(path).open() as f:
         rows = list(csv.DictReader(f, delimiter='\t'))
-    required = {'sample_id', 'biological_sample_id', 'unit_id', 'condition', 'group', 'role', 'bam'}
+    required = {'sample_id', 'biological_sample_id', 'unit_id', 'condition', 'group', 'role', 'calibration_group', 'bam'}
     if not rows or not required.issubset(rows[0]):
-        raise ValueError('Manifest requires sample_id biological_sample_id unit_id condition group role bam')
+        raise ValueError('Manifest requires sample_id biological_sample_id unit_id condition group role calibration_group bam')
     units = set()
-    mapping = {}
+    sample_mapping = {}
+    biological_mapping = {}
+    sample_calibration_groups = {}
     paths = set()
     for r in rows:
         if not all(r[k].strip() for k in required):
@@ -65,14 +67,22 @@ def read_manifest(path):
         if r['unit_id'] in units:
             raise ValueError('Duplicate sequencing unit: ' + r['unit_id'])
         units.add(r['unit_id'])
+        calibration_group = r['calibration_group'].strip()
+        if not calibration_group:
+            raise ValueError('calibration_group is required; declare the experimentally comparable calibration set')
+        if not re.fullmatch(r'[A-Za-z][A-Za-z0-9_]*', calibration_group):
+            raise ValueError('Unsafe calibration_group: ' + calibration_group)
         identity = (r['biological_sample_id'], r['condition'], r['group'], r['role'])
-        if r['sample_id'] in mapping and mapping[r['sample_id']] != identity:
+        if r['sample_id'] in sample_mapping and sample_mapping[r['sample_id']] != identity:
             raise ValueError('Statistical sample maps to conflicting biological metadata')
-        bio_key = 'bio:' + r['biological_sample_id']
-        if bio_key in mapping and mapping[bio_key] != identity:
-            raise ValueError('Biological sample maps to conflicting sample/condition/group')
-        mapping[r['sample_id']] = identity
-        mapping[bio_key] = identity
+        if r['biological_sample_id'] in biological_mapping and biological_mapping[r['biological_sample_id']] != (r['sample_id'], r['condition'], r['group'], r['role']):
+            raise ValueError('Biological sample maps to multiple statistical samples or metadata')
+        if r['sample_id'] in sample_calibration_groups and sample_calibration_groups[r['sample_id']] != calibration_group:
+            raise ValueError('Statistical sample maps to multiple calibration groups')
+        sample_mapping[r['sample_id']] = identity
+        biological_mapping[r['biological_sample_id']] = (r['sample_id'], r['condition'], r['group'], r['role'])
+        sample_calibration_groups[r['sample_id']] = calibration_group
+        r['_calibration_group'] = calibration_group
         p = Path(r['bam'])
         p = p if p.is_absolute() else Path(path).resolve().parent / p
         p = p.resolve()
@@ -103,17 +113,21 @@ def count_one(row, reference, out, mapq, remove_duplicates, threads):
     unit_dir = out / 'units' / row['unit_id']
     unit_dir.mkdir(parents=True)
     exclude = 4 | 8 | 256 | 512 | 2048 | (1024 if remove_duplicates else 0)
-    # Apply MAPQ per pair below: samtools -q filters alignments separately and
-    # can leave one mate behind when mate qualities differ.
-    cmd = ['samtools', 'view', '-f', '2', '-F', str(exclude), str(bam)]
-    (unit_dir / 'commands.json').write_text(json.dumps({'command': cmd,
-        'pairing': 'bounded-memory QNAME grouping; input coordinate-sorted or unsorted',
+    # Collate groups QNAMEs with bounded memory and spill files as needed. MAPQ
+    # remains a pair-level decision so one low-quality mate cannot orphan its mate.
+    collate_cmd = ['samtools', 'collate', '-@', str(max(0, threads - 1)), '-T', str(unit_dir / 'collate_tmp'),
+                   '-u', '-O', str(bam)]
+    view_cmd = ['samtools', 'view', '-f', '2', '-F', str(exclude), '-']
+    (unit_dir / 'commands.json').write_text(json.dumps({'commands': [collate_cmd, view_cmd],
+        'pairing': 'samtools collate with bounded memory and temporary spill; streaming QNAME grouping',
         'MAPQ': 'both mates checked together'}, indent=2))
-    proc = subprocess.Popen(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    collate_log = (unit_dir / 'collate.stderr.log').open('w')
+    collate = subprocess.Popen(collate_cmd, text=True, stdout=subprocess.PIPE, stderr=collate_log)
+    proc = subprocess.Popen(view_cmd, text=True, stdin=collate.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    collate.stdout.close()
     pair_total = collections.Counter()
     fragments = 0
     with (unit_dir / 'fragments.bed').open('w') as bed:
-        pairs = {}
         def emit(records):
             nonlocal fragments
             if not records:
@@ -122,6 +136,7 @@ def count_one(row, reference, out, mapq, remove_duplicates, threads):
             if len(records) != 2:
                 pair_total['invalid_pair_groups'] += 1
                 return
+            pair_total['proper_pair_groups'] += 1
             one = next((x for x in records if int(x[1]) & 64), None)
             two = next((x for x in records if int(x[1]) & 128), None)
             if one is None or two is None or one is two or one[2] != two[2] or one[2] == '*':
@@ -141,16 +156,23 @@ def count_one(row, reference, out, mapq, remove_duplicates, threads):
                 return
             bed.write(f'{one[2]}\t{start}\t{end}\t{qname}\n')
             fragments += 1
+        current_name = None
+        records = []
         for line in proc.stdout:
             fields = line.rstrip('\n').split('\t')
-            pair = pairs.setdefault(fields[0], [])
-            pair.append(fields)
-            if len(pair) > 2:
+            if current_name is not None and fields[0] != current_name:
+                emit(records)
+                records = []
+            current_name = fields[0]
+            records.append(fields)
+            if len(records) > 2:
                 raise ValueError('More than two primary alignments for QNAME '+fields[0])
-        for pair in pairs.values():
-            emit(pair)
+        emit(records)
         stderr = proc.stderr.read()
-        if proc.wait():
+        view_status = proc.wait()
+        collate_status = collate.wait()
+        collate_log.close()
+        if view_status or collate_status:
             raise RuntimeError('samtools view failed: ' + stderr[-2000:])
     if pair_total['invalid_pair_groups'] or pair_total['invalid_template_length']:
         raise ValueError('Unexpected malformed proper-pair BAM records for ' + row['unit_id'])
@@ -158,7 +180,10 @@ def count_one(row, reference, out, mapq, remove_duplicates, threads):
         raise ValueError('No accepted spike-in fragments at MAPQ ' + str(mapq) + ' for ' + row['unit_id'])
     return {'sample_id': row['sample_id'], 'biological_sample_id': row['biological_sample_id'],
             'unit_id': row['unit_id'], 'condition': row['condition'], 'group': row['group'],
-            'role': row['role'], 'accepted_spikein_fragments': fragments, 'mapq_both_mates': mapq,
+            'role': row['role'], 'calibration_group': row['_calibration_group'],
+            'accepted_spikein_fragments': fragments, 'low_mapq_pairs': pair_total['low_mapq_pairs'],
+            'pair_accounting': json.dumps(dict(pair_total), sort_keys=True),
+            'mapq_both_mates': mapq,
             'duplicates_removed': remove_duplicates, 'bam': str(bam), 'bam_sha256': digest(bam),
             'reference_fasta_sha256': digest(reference_path), 'bam_bed_sha256': digest(unit_dir / 'fragments.bed'),
             'excluded_duplicate_records': 'flag 0x400 excluded' if remove_duplicates else 'retained',
@@ -200,15 +225,23 @@ def main():
         for r in unit_rows:
             z = grouped.setdefault(r['sample_id'], dict(sample_id=r['sample_id'],
                 biological_sample_id=r['biological_sample_id'], condition=r['condition'], group=r['group'],
-                role=r['role'], unit_count=0, spikein_fragments=0, calibration_group=r.get('calibration_group', 'experiment')))
+                role=r['role'], unit_count=0, spikein_fragments=0, calibration_group=r['calibration_group'],
+                size_factor='', track_scale_relative='', calibration_accepted=False))
+            if r['calibration_group'] != z['calibration_group']:
+                raise ValueError('Statistical sample combines calibration groups')
             if r['biological_sample_id'] != z['biological_sample_id']:
                 raise ValueError('Statistical sample combines distinct biological samples')
             z['unit_count'] += 1
             z['spikein_fragments'] += r['accepted_spikein_fragments']
         calibration_groups = {}
         for z in grouped.values():
+            if z['role'] != 'target':
+                z['calibration_status'] = 'excluded_non_target_role'
+                continue
             calibration_groups.setdefault(z['calibration_group'], []).append(z)
         for name, group_rows in calibration_groups.items():
+            if len(group_rows) < 2:
+                raise ValueError('Calibration group needs at least two target biological samples: ' + name)
             if any(z['spikein_fragments'] <= 0 for z in group_rows):
                 raise ValueError('Nonpositive biological-sample count in calibration group ' + name)
             gm = math.exp(sum(math.log(z['spikein_fragments']) for z in group_rows) / len(group_rows))
@@ -216,9 +249,12 @@ def main():
                 z['size_factor'] = z['spikein_fragments'] / gm
                 z['track_scale_relative'] = gm / z['spikein_fragments']
                 z['calibration_accepted'] = False
-        for table, name in ((unit_rows, 'unit_counts.tsv'), (list(grouped.values()), 'biological_sample_counts.tsv')):
+                z['calibration_status'] = 'requires_scientific_review'
+        biological_rows = list(grouped.values())
+        for table, name in ((unit_rows, 'unit_counts.tsv'), (biological_rows, 'biological_sample_counts.tsv'),
+                            ([z for z in biological_rows if z['role'] == 'target'], 'target_biological_sample_counts.tsv')):
             with (policy_dir / name).open('w') as f:
-                w = csv.DictWriter(f, fieldnames=list(table[0]), delimiter='\t')
+                w = csv.DictWriter(f, fieldnames=list(table[0] if table else biological_rows[0]), delimiter='\t')
                 w.writeheader()
                 w.writerows(table)
         all_results.append({'policy': policy, 'units': unit_rows, 'biological_samples': list(grouped.values())})

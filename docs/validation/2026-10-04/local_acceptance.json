@@ -1,0 +1,168 @@
+{
+  "state": "PASS",
+  "scope": "local synthetic integration + runtime",
+  "checks": [
+    {
+      "check": "contracts",
+      "command": [
+        "/home/faz_laptop/projects/CUTTag-project-template/.pixi/envs/analysis/bin/python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "returncode": 0,
+      "state": "PASS"
+    },
+    {
+      "check": "runtime",
+      "command": [
+        "/home/faz_laptop/projects/CUTTag-project-template/.pixi/envs/analysis/bin/python",
+        "scripts/doctor.py",
+        "--out",
+        "/tmp/cuttag_acceptance_20261004final/runtime.json"
+      ],
+      "returncode": 0,
+      "state": "PASS"
+    },
+    {
+      "check": "fragments",
+      "command": [
+        "/home/faz_laptop/projects/CUTTag-project-template/.pixi/envs/analysis/bin/python",
+        "tests/run_fragment_fixture.py"
+      ],
+      "returncode": 0,
+      "state": "PASS"
+    },
+    {
+      "check": "spikein_fragments",
+      "command": [
+        "/home/faz_laptop/projects/CUTTag-project-template/.pixi/envs/analysis/bin/python",
+        "tests/run_spikein_fixture.py"
+      ],
+      "returncode": 0,
+      "state": "PASS"
+    },
+    {
+      "check": "project",
+      "command": [
+        "/home/faz_laptop/projects/CUTTag-project-template/.pixi/envs/analysis/bin/python",
+        "tests/run_project_fixture.py",
+        "--out",
+        "/tmp/cuttag_acceptance_20261004final/project"
+      ],
+      "returncode": 0,
+      "state": "PASS"
+    },
+    {
+      "check": "options",
+      "command": [
+        "/home/faz_laptop/projects/CUTTag-project-template/.pixi/envs/analysis/bin/python",
+        "tests/run_options_fixture.py",
+        "--out",
+        "/tmp/cuttag_acceptance_20261004final/options"
+      ],
+      "returncode": 0,
+      "state": "PASS"
+    },
+    {
+      "check": "R_models_ORA",
+      "command": [
+        "/home/faz_laptop/projects/CUTTag-project-template/.pixi/envs/analysis/bin/python",
+        "tests/run_r_fixture.py",
+        "--out",
+        "/tmp/cuttag_acceptance_20261004final/R"
+      ],
+      "returncode": 0,
+      "state": "PASS"
+    },
+    {
+      "check": "annotation",
+      "command": [
+        "/home/faz_laptop/projects/CUTTag-project-template/.pixi/envs/analysis/bin/python",
+        "tests/run_annotation_fixture.py",
+        "--out",
+        "/tmp/cuttag_acceptance_20261004final/annotation"
+      ],
+      "returncode": 0,
+      "state": "PASS"
+    },
+    {
+      "check": "motif",
+      "command": [
+        "/home/faz_laptop/projects/CUTTag-project-template/.pixi/envs/analysis/bin/python",
+        "tests/run_motif_fixture.py",
+        "--out",
+        "/tmp/cuttag_acceptance_20261004final/motif"
+      ],
+      "returncode": 0,
+      "state": "PASS"
+    }
+  ],
+  "source_sha256": {
+    "scripts/decisions.py": "d58f04fdb541693c4f1a876b02c92377a03ea5e73e6b161984a10b376ca4be30",
+    "scripts/qc_atlas.py": "36bd0c44606d187b740d65dd88a78826dd4e4c2d0970b1d1e3c19600922a237c",
+    "scripts/visualize.R": "40bc80bdfd7c180f469e5d6ba0f4d1551ea51485e2d7e0373bb81b330e89289b",
+    "scripts/check_model_review.py": "f72c86e6cf12d15d3972840a0f76de1c501e70bf83e13b9a40e37851e40a12d3",
+    "scripts/finalize.py": "a59eae9fb549353a023e28392f36772f877237fa75b4117c75f7faada20c560d",
+    "scripts/count_fragments.py": "a2221ded1113042da644e6c92587ef268dfd57e983fd9f401dd519ac99e84369",
+    "scripts/run_differential.py": "ede8beb4098b27b40359153a968893cff07939a7d189171691332d6645bf1cc2",
+    "scripts/enrichment.R": "e491e08959fd3b07a76986eb8c85bb6fc84a5d2f0054f89acbc2aec96e231863",
+    "scripts/doctor.py": "0c63c6eb30b5a704ed3e0f5a00823ae18192b934efd3e08a36b2d35e674fe20e",
+    "scripts/spikein_audit.py": "b18185691299d3cbaa9b83e3ba9493349cd1c00579e298b412feeae8fb1b6906",
+    "scripts/install_bioc_data.py": "cd0b00c8153cef4534fc3cdb706534b78a3851ebabd50978fb949f15d9a7861c",
+    "scripts/verify_release.py": "e9129be0a4386d7ca82bd05c1d0f93d3feacce7f87925dc574f57bf6c0c86b54",
+    "scripts/spikein_crossmap.py": "13016e9b1184a849b5a228a6f55104c988039899ca95e716e5f5f7404e7e1605",
+    "scripts/spikein_fragments.py": "7f16567fa5aa2127b5736de2f6e5c8397b16efd9ec9cec019dd17b0047ed97d6",
+    "scripts/annotate.R": "3e45a73c8893162140b4c847200c4ac2fe36dc9a2a2430c34c9a2021947fbf56",
+    "scripts/fetch_tools.py": "1f158491a5aa7898d08b68ac96282188cfe7f20c1d986f55f04d58baa960e4dc",
+    "scripts/motif.py": "f54521ae3f2644bda258e48fe9f4cc13e51834fba3c60827fcfc2220dd890bc6",
+    "scripts/fragments.py": "2de56c799a31ec9b20de745d1cab150fd5e2c0fc455c6d2d64b8ec00684b3ace",
+    "scripts/differential.R": "ceac25aacc6f68b12a4ce279ec1fc014f42b21c6e55fe09a2ee64ce3c817ecec",
+    "scripts/workflow.py": "dc6891e759d3517c14892a39439085058517897a9021e63ec354a6bdfe9b5d92",
+    "scripts/init_project.py": "ebc7ef0afb3f8036de5100f4afd369c6cc1a3d7bd3c909c718d6c721c873f2ad",
+    "scripts/prepare_review.py": "f114e0e7294b1647835d14720551f376e5971df4fdc5a698d68ba65f35b71a5b",
+    "scripts/tracks.py": "31359595133de1872439a26ea8c1f6f9151ef913c8e47cd89016e6f7a2b5dcea",
+    "scripts/acceptance.py": "5eb116accda76109333fa17485b3d674f98656148268232184d18366296b4d49",
+    "scripts/consensus.py": "923f439d9240cc7e1a9f84f164586bf477ba2b687ef3fbd7d0524439edf32ab2",
+    "scripts/plan_downstream.py": "e282aedabefb1f1113989945d2943e51692696c5b12451c9f451e6eda6450019",
+    "scripts/compare_peaks.py": "310c2bed7a612d649ca61411df2a980746fe4036d123c545b7f140d7314fbdf7",
+    "scripts/audit_run.py": "0bf9860a816601689eb6fea600a8595eac46c17505697cd2c4346a98b1c55859",
+    "scripts/cuttag.py": "3f097dd09b2c3316c59af42fa6061686309a480bef94eee1bf44b870a9261b19",
+    "scripts/peak_diagnostics.py": "e1d2a3e835af3b7836393f846869ac41f99cba286f99a1439e8e7f38d0ab3dce",
+    "scripts/spikein_compare.py": "7df21dda0dc7f0c9919325fdfd9435c3545889bdb15c6083f51e4c2e46b9df64",
+    "scripts/strategy_matrix.py": "6221195ac6a0a0778a340a9558cb26dc1acd4d5af042e44dd7c25764eababa72",
+    "scripts/reference_audit.py": "b31bf6bd96e0e88c9eb2ec40d7ced65790a1818c02ffbb140d542b61192ccb87",
+    "scripts/compare_models.py": "a329c714a54aad63ace40335cb54acd2705a215aa26a3b70c3b467c18edf4738",
+    "scripts/import_nfcore.py": "3ba1e73f4eaf2fcaebb9fe148ba4e62006e81bd97cbeaa43308cd4099060c27c",
+    "scripts/collect_qc.py": "7439de59e90685fe05c3732490502991f6794837a548b51926f82f30e25c8937",
+    "scripts/prepare_universe.py": "d1bf9ca3d62f38cf6106bbed16a7b1931017ad60681ad3d3f90912b821b2d9ad",
+    "scripts/runtime.py": "e6ede08cd24e6bf988f69e7dc6478b2ecab65f63ca1621b524995d4421fb25ea",
+    "scripts/compare_strategy_matrix.py": "ce9d72a3e6b9c14e10c5a3ed47f57d1be00f9791908cc4dd958f664bc1a88c2a",
+    "tests/test_contracts.py": "b2ee9835c93ee59c01b1c269a2431d641b2709a5506ec7c667f9d4cc613b58c2",
+    "tests/test_maturity.py": "bf21d7a4230de629f3b835f3a5e4b3381ea36a3329ca69494f4fe41fff70c901",
+    "tests/run_motif_fixture.py": "f9fd69877c7471c6fac25b3fd1e49bbb6c020ceb86a8abaf82201a9da383965e",
+    "tests/run_annotation_fixture.py": "df4b1cb85f40fbc5d000eedcd8346257e85d4a98d00f895571118c8c878626c2",
+    "tests/run_options_fixture.py": "d281c5730a06f31a2395fbdf41f9380ce4e31a631fe93b34963638294b043d55",
+    "tests/test_modules.py": "027c204b90235f452a50a742e8397ae3ae86f8fde93bcc5bf8496ebc3927a606",
+    "tests/test_strategy_tools.py": "482fe04d2edbf4d98249a2fc255cf2a356fd8613c91d8e6da30f7a085500b832",
+    "tests/run_project_fixture.py": "d57291d76b8e71163bacef41fc1abeceadc994081ed2419bbe6cf33fdff18e1f",
+    "tests/run_r_fixture.py": "bf24f616dd772d3363e68d71eb95d38d1ba44f60755b0605f4c6f5e2b5a45ebc",
+    "tests/audit_source_designs.py": "f500aa50410f3a6ff04138d9f8d58ef9afc7647291a4072e01234cad2775e430",
+    "tests/test_audit_regressions.py": "b4d3e0416f9cf5c1b7ad19e05007907993dae46f8437aca684550b3ce7f9c90a",
+    "tests/run_fragment_fixture.py": "77218644e6bbcea8f8ff058179aefb6e68b87dafbdd2e9552db4b17e862fb494",
+    "tests/run_spikein_fixture.py": "bd7893890709a05dc63d8ad6db48ac3d57909a40986689591205f1819033a465",
+    "config/tools.json": "8bc7fa437449a79c4de35b6ab5ef90b1b2a2fb798a9fd277f15af73674277b6a",
+    "config/samples.tsv": "4784333a163888081e25c4c2a230d9942b322d8dc0c74712d0b0acb12afe77d8",
+    "config/project.json": "29a68fe8568ab92f824abd95b3f225b49609e0ebf0a2b48610b46bc9aa034fe4",
+    "config/profiles/local.config": "44f85be724d0de3f057f074da4ec1531bc8546786ebdce1ed3b8a7e9852c9e66",
+    "config/profiles/spikein_overlap_diagnostic.config": "40c741d330d12f0dae632f4ef90ee65d769d9b7e707d9feee3b10f1c00103044",
+    "pixi.lock": "cfb9fb2c4ed54c4af406c6f636830fb4185742ba4f04434de8f7c62b01da528d"
+  },
+  "limitations": [
+    "Official nf-core test is separate: scripts/cuttag.py test.",
+    "Synthetic tests do not approve scientific decisions or validate biological performance on a new experiment."
+  ]
+}

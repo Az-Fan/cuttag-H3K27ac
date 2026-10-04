@@ -37,7 +37,7 @@ pixi run -e analysis Rscript scripts/differential.R results/counts/raw.tsv metad
 pixi run -e analysis Rscript scripts/differential.R results/counts/raw.tsv metadata.tsv KD Control results/differential/model2 spikein spikein.tsv model_review_spikein.json
 ```
 
-spikein.tsv 含 `sample_id spikein_fragments calibration_accepted`；accepted 写 TRUE。DESeq2 的 size factor 为 spike-in counts / 其几何平均数，归一化 counts 因此与该值相除。默认过滤 total count ≥10、FDR<0.05、|log2FC|≥1，R 入口支持文末列出的环境变量，project.json 的同名参数是计划元数据，执行独立 R 命令时须同步。CPM BigWig 与 median-ratio DESeq2 是不同归一化。
+spikein.tsv 含 `sample_id spikein_fragments calibration_accepted calibration_group`；accepted 写 TRUE。当前正式 `~ condition` 模型要求本次对比的 target 样本处于同一校准组；多个组分别居中后的系数不能进入忽略组别的单一模型。DESeq2 的 size factor 为 spike-in counts / 其几何平均数，归一化 counts 因此与该值相除。默认过滤 total count ≥10、FDR<0.05、|log2FC|≥1，R 入口支持文末列出的环境变量，project.json 的同名参数是计划元数据，执行独立 R 命令时须同步。CPM BigWig 与 median-ratio DESeq2 是不同归一化。
 
 ## 注释与 ORA
 
@@ -74,17 +74,24 @@ manifest 为 TSV：`sample_id mode bowtie2_log`，可加 `calibration_group`，�
 python scripts/spikein_audit.py --manifest spikein_logs.tsv --out results/qc/spikein1 --equal-amount-confirmed --added-at after_tagmentation
 ```
 
-`spikein_audit.py` 仅审计 Bowtie2 日志中的 exactly-1 与 multi pair 统计，不是正式校准计数。正式计数使用 `spikein_fragments.py`，要求输入 spike-in-only BAM；manifest 每个测序 unit 一行，脚本校验 BAM 参考序列字典、proper primary pair、两端 MAPQ，并只计一次 paired fragment。技术 unit 汇总到 biological sample 后输出 MAPQ 20/30 结果和组内系数。
+`spikein_audit.py` 仅审计 Bowtie2 日志中的 exactly-1 与 multi pair 统计，不是正式校准计数。正式计数使用 `spikein_fragments.py`，要求输入 spike-in-only BAM；manifest 每个测序 unit 一行，必须显式填写 `calibration_group`，脚本校验 BAM 参考序列字典、proper primary pair、两端 MAPQ，并只计一次 paired fragment。技术 unit 汇总到 biological sample 后输出各 MAPQ 结果和组内系数。只有 `role=target` 的生物样本参与归一化系数计算；control/IgG 计数保留作审核，不参与 target DE 的几何均值。
+
+```text
+sample_id biological_sample_id unit_id condition group role calibration_group bam
+KD1 KD1 KD1_lane1 KD KD_H3K27ac target prep_A data/lambda/KD1.bam
+```
 
 ```bash
 python scripts/spikein_fragments.py --manifest spikein_bams.tsv --reference data/external/lambda.fa --mapq 20 30 --out results/qc/spikein_fragments_01
 ```
 
+正式差异输入应使用对应策略目录下的 `target_biological_sample_counts.tsv`，不要把 IgG/control 行并入 target DE size factors。`calibration_group` 是必填字段，不能省略后让不同制备/加入批次默认合并。
+
 所有方案都保持 `calibration_accepted=False`。正式接受前需审阅相同输入读段、唯一比对/MAPQ 规则、target+spike-in 竞争比对、等量加样、加入时点、校准范围和完整数据计数。竞争比对诊断可用 `spikein_crossmap.py` 在固定配对 FASTQ 子集上比较唯一 target、唯一 spike-in、跨参考和 ambiguous pairs；子集结果不可代替全量 BAM 计数。
 
 ### Peak caller 诊断
 
-manifest TSV 列为 `sample_id target_bam control_bam`，BAM 路径相对 manifest 所在目录。将 MACS2 narrow/broad 与保留重复下的 IgG 默认缩放、scale-to-large、no-IgG 交叉运行，共六种诊断；不会自动选择生产结果。除峰数外，还要比较区间交叠、峰宽、FRiP、黑名单交叠、重复支持和下游结论敏感性。
+manifest TSV 列为 `sample_id target_bam control_bam bam_policy`，目标 BAM 必须是 duplicate-retained；BAM 路径相对 manifest 所在目录。只跑 no-IgG 时 `control_bam` 可留空。默认比较 MACS2 narrow/broad × IgG 默认缩放/scale-to-large/no-IgG，共六种候选；`--shapes`、`--backgrounds`、`--duplicate-modes all auto` 可缩小或扩展网格。不会自动选择生产结果。完成的每个候选会导出 `artifact_sets/<strategy>.tsv`，供 `strategy_matrix.py` 继续下游比较。除峰数外，还要比较区间交叠、峰宽、FRiP、黑名单交叠、重复支持和下游结论敏感性。
 
 ```bash
 python scripts/peak_diagnostics.py --manifest bams.tsv --gsize 2700000000 --out results/qc/caller1

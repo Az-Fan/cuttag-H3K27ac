@@ -18,6 +18,12 @@ if an['normalization']=='spikein':
  if not a.spikein:raise ValueError('Spike-in table required')
  sp=cfg['spikein']
  if sp['enabled'] is not True or sp['calibration_accepted'] is not True or sp['equal_amount_confirmed'] is not True or sp['added_at'] in ('','unknown',None):raise ValueError('Configured spike-in not accepted')
+ with a.spikein.open() as f:spike_rows=list(csv.DictReader(f,delimiter='\t'))
+ if not spike_rows or not {'sample_id','spikein_fragments','calibration_accepted','calibration_group'}.issubset(spike_rows[0]):raise ValueError('Spike-in table must be target-only and include calibration_group')
+ if {r['sample_id'] for r in spike_rows}!=set(target) or len(spike_rows)!=len(target):raise ValueError('Spike-in rows must match configured target biological samples exactly')
+ groups={r['calibration_group'] for r in spike_rows}
+ if '' in groups or len(groups)!=1:raise ValueError('The current ~ condition model requires one shared calibration_group; multiple relative scales need a reviewed group-aware design')
+ if any(r['calibration_accepted'].strip().lower() not in ('true','1') for r in spike_rows):raise ValueError('Every target spike-in row must be accepted in the reviewed table')
  cmd.append(str(a.spikein))
 cmd.append(str(a.review));env=os.environ.copy();env.update(CUTTAG_ALPHA=str(an['alpha']),CUTTAG_LFC=str(an['abs_log2fc']),CUTTAG_MIN_COUNT=str(an['min_total_count']))
 raise SystemExit(subprocess.run(cmd,env=env).returncode)

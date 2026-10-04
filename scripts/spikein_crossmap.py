@@ -97,37 +97,51 @@ def main():
         if not tested:
             raise ValueError('No reads in ' + sid)
         sam = dest / 'competitive.sam'
-        cmd = ['bowtie2', '--end-to-end', '--very-sensitive', '--no-mixed', '--no-discordant',
+        cmd = ['bowtie2', '--end-to-end', '--very-sensitive', '--reorder', '--no-mixed', '--no-discordant',
                '-I', '10', '-X', '700', '-x', str(idx / 'competitive'), '-1', str(fq1), '-2', str(fq2),
                '-p', str(a.threads), '--seed', '42', '-S', str(sam)]
         with (dest / 'alignment.log').open('w') as log:
             subprocess.run(cmd, stdout=log, stderr=subprocess.STDOUT, check=True)
-        pairs_by_name = {}
+        classes = {'unique_target': 0, 'unique_spikein': 0, 'cross_or_discordant': 0,
+                   'ambiguous_or_low_mapq': 0, 'unmapped_or_incomplete': 0}
+        current_name, pair = None, {}
+
+        def classify(pair_rows):
+            if 'r1' not in pair_rows or 'r2' not in pair_rows:
+                classes['unmapped_or_incomplete'] += 1; return
+            x, y = pair_rows['r1'], pair_rows['r2']
+            if x[0] == '*' or y[0] == '*' or x[2] & 4 or y[2] & 4:
+                classes['unmapped_or_incomplete'] += 1; return
+            if min(x[1], y[1]) < a.mapq:
+                classes['ambiguous_or_low_mapq'] += 1; return
+            proper = bool(x[2] & 2) and bool(y[2] & 2)
+            if proper and x[0].startswith('target__') and y[0].startswith('target__'):
+                classes['unique_target'] += 1
+            elif proper and x[0].startswith('spikein__') and y[0].startswith('spikein__'):
+                classes['unique_spikein'] += 1
+            else:
+                classes['cross_or_discordant'] += 1
+
         with sam.open() as f:
             for line in f:
                 if line.startswith('@'):
                     continue
                 z = line.rstrip().split('\t'); flag = int(z[1])
-                if flag & 64 and not flag & (4 | 256 | 2048):
-                    pairs_by_name.setdefault(z[0], {})['r1'] = (z[2], int(z[4]), flag)
-                elif flag & 128 and not flag & (4 | 256 | 2048):
-                    pairs_by_name.setdefault(z[0], {})['r2'] = (z[2], int(z[4]), flag)
-        classes = {'unique_target': 0, 'unique_spikein': 0, 'cross_or_discordant': 0,
-                   'ambiguous_or_low_mapq': 0, 'unmapped_or_incomplete': 0}
-        for pair in pairs_by_name.values():
-            if 'r1' not in pair or 'r2' not in pair:
-                classes['unmapped_or_incomplete'] += 1; continue
-            x, y = pair['r1'], pair['r2']
-            if x[0] == '*' or y[0] == '*':
-                classes['unmapped_or_incomplete'] += 1; continue
-            if x[0].startswith('target__') and y[0].startswith('target__') and min(x[1], y[1]) >= a.mapq:
-                classes['unique_target'] += 1
-            elif x[0].startswith('spikein__') and y[0].startswith('spikein__') and min(x[1], y[1]) >= a.mapq:
-                classes['unique_spikein'] += 1
-            elif min(x[1], y[1]) >= a.mapq:
-                classes['cross_or_discordant'] += 1
-            else:
-                classes['ambiguous_or_low_mapq'] += 1
+                if flag & 64 and not flag & (256 | 2048):
+                    mate, key = 'r1', 'r1'
+                elif flag & 128 and not flag & (256 | 2048):
+                    mate, key = 'r2', 'r2'
+                else:
+                    continue
+                if current_name is not None and z[0] != current_name:
+                    classify(pair)
+                    pair = {}
+                current_name = z[0]
+                if key in pair:
+                    raise ValueError('Multiple primary alignments for tested QNAME ' + z[0])
+                pair[mate] = (z[2], int(z[4]), flag)
+            if current_name is not None:
+                classify(pair)
         if sum(classes.values()) != tested:
             raise ValueError('SAM pair accounting differs from tested reads for ' + sid)
         results.append({'sample_id': sid, 'pairs_tested': tested, 'mapq_both_mates': a.mapq,

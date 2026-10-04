@@ -16,7 +16,8 @@ def write_table(path, columns, rows):
         writer.writerows(rows)
 
 
-def plan(config, artifacts, out, mapq, fraction, universe="support_core", blacklist_mode="subtract", min_width=1):
+def plan(config, artifacts, out, mapq, fraction, universe="support_core", blacklist_mode="subtract", min_width=1,
+         remove_duplicates=False):
     root, cfg, samples = load(config)
     report = validate(root, cfg, samples, True)
     if report['errors']:
@@ -55,7 +56,10 @@ def plan(config, artifacts, out, mapq, fraction, universe="support_core", blackl
         sid = row['sample_id']
         sample = targets[sid]
         dest = out/'fragments'/sid
-        add('fragment_'+sid, 'fragments.py', ['--bam', row['bam'], '--mapq', mapq, '--threads', cfg['resources']['cpus'], '--out', dest],
+        fragment_args = ['--bam', row['bam'], '--mapq', mapq, '--threads', cfg['resources']['cpus'], '--out', dest]
+        if remove_duplicates:
+            fragment_args.append('--remove-duplicates')
+        add('fragment_'+sid, 'fragments.py', fragment_args,
             [row['bam']], [dest/'fragments.bed', dest/'summary.json', dest/'length_histogram.tsv'], ['reference'])
         peaks.append({'group': sample['condition'], 'biological_sample_id': sample['biological_sample_id'], 'peaks_bed': row['peaks_bed']})
         fragments.append({'sample_id': sid, 'fragments_bed': str(dest/'fragments.bed')})
@@ -83,7 +87,7 @@ def plan(config, artifacts, out, mapq, fraction, universe="support_core", blackl
     (out/'handoff.json').write_text(json.dumps({'state': 'REVIEW_REQUIRED', 'config_sha256': sha256(config),
         'formal_inference_eligible': report['formal_inference_eligible'], 'warnings': report['warnings'],
         'next': 'Review upstream/peak/independence decisions, then prepare model review and run_differential.py. No formal model is launched by this plan.',
-        'fragment_policy': {'mapq_both_mates': mapq, 'duplicates': 'retained', 'proper_pairs': True},
+        'fragment_policy': {'mapq_both_mates': mapq, 'duplicates': 'removed' if remove_duplicates else 'retained', 'proper_pairs': True},
         'consensus_support_fraction': fraction,'universe':universe,'blacklist_mode':blacklist_mode,'min_width':min_width}, indent=2)+'\n')
     return out/'workflow.json'
 
@@ -97,8 +101,8 @@ if __name__ == '__main__':
     p.add_argument('--fraction', type=float, default=2/3)
     p.add_argument('--universe',choices=['support_core','reproducible_union'],default='support_core')
     p.add_argument('--blacklist-mode',choices=['subtract','drop'],default='subtract')
-    p.add_argument('--min-width',type=int,default=1)
+    p.add_argument('--min-width',type=int,default=1);p.add_argument('--remove-duplicates',action='store_true')
     a = p.parse_args()
     if not 0 <= a.mapq <= 255 or not 0 < a.fraction <= 1 or a.min_width<1:
         p.error('Invalid MAPQ/fraction')
-    print(plan(a.config.resolve(), a.artifacts.resolve(), a.out.resolve(), a.mapq, a.fraction, a.universe, a.blacklist_mode, a.min_width))
+    print(plan(a.config.resolve(), a.artifacts.resolve(), a.out.resolve(), a.mapq, a.fraction, a.universe, a.blacklist_mode, a.min_width, a.remove_duplicates))

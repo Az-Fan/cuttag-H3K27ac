@@ -39,10 +39,13 @@ for q, remove, expected in [(20,False,3),(20,True,2),(30,False,2),(30,True,1)]:
 target = bam('target', [(rng.randrange(1,999800),60,False) for _ in range(2000)] + [(center+rng.randrange(-100,100),60,False) for center in (10000,30000,50000) for _ in range(1000)])
 control = bam('control', [(rng.randrange(1,999800),60,False) for _ in range(500)])
 manifest = a.out/'peaks.tsv'
-manifest.write_text('sample_id\ttarget_bam\tcontrol_bam\ns1\ttarget.bam\tcontrol.bam\n')
-subprocess.run([sys.executable,str(ROOT/'scripts/peak_diagnostics.py'),'--manifest',str(manifest),'--out',str(a.out/'peaks'),'--gsize','1000000','--execute']+(['--macs2-container',str(a.macs2_container.resolve())] if a.macs2_container else []),check=True,cwd='/tmp')
+manifest.write_text('sample_id\ttarget_bam\tcontrol_bam\tbam_policy\ns1\ttarget.bam\tcontrol.bam\tduplicates_retained\n')
+subprocess.run([sys.executable,str(ROOT/'scripts/peak_diagnostics.py'),'--manifest',str(manifest),'--out',str(a.out/'peaks'),'--gsize','1000000','--duplicate-modes','all','auto','--execute']+(['--macs2-container',str(a.macs2_container.resolve())] if a.macs2_container else []),check=True,cwd='/tmp')
 reports=json.loads((a.out/'peaks/diagnostics.json').read_text())
-assert len(reports)==6 and all(r['state']=='COMPUTATIONAL_PASS' for r in reports)
+reports=reports['candidates']
+assert len(reports)==12 and all(r['state']=='COMPUTATIONAL_PASS' for r in reports)
+assert {r['duplicate_mode'] for r in reports}=={'all','auto'}
+assert len(json.loads((a.out/'peaks/diagnostics.json').read_text())['artifact_manifests'])==12
 # Every method must recover at least one planted enriched locus, not merely exit zero.
 for report in reports:
     path=a.out/'peaks'/('s1_'+report['strategy'])/('s1_peaks.'+report['shape']+'Peak')
