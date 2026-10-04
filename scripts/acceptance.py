@@ -14,6 +14,7 @@ if not a.quick:
  checks += [
   ('runtime',[sys.executable,'scripts/doctor.py','--out',str(a.out/'runtime.json')]),
   ('fragments',[sys.executable,'tests/run_fragment_fixture.py']),
+  ('spikein_fragments',[sys.executable,'tests/run_spikein_fixture.py']),
   ('project',[sys.executable,'tests/run_project_fixture.py','--out',str(a.out/'project')]),
   ('options',[sys.executable,'tests/run_options_fixture.py','--out',str(a.out/'options')]),
   ('R_models_ORA',[sys.executable,'tests/run_r_fixture.py','--out',str(a.out/'R')]),

@@ -11,9 +11,21 @@ class Modules(unittest.TestCase):
   with tempfile.TemporaryDirectory() as d:
    p=Path(d);(p/'a.bed').write_text('chr1\t0\t30\n');(p/'b.bed').write_text('chr1\t10\t40\n');(p/'black.bed').write_text('chr1\t15\t16\n')
    (p/'manifest.tsv').write_text('group\tbiological_sample_id\tpeaks_bed\ng\ta\ta.bed\ng\ta\ta.bed\ng\tb\tb.bed\n')
-   subprocess.run(['python3',str(ROOT/'scripts/consensus.py'),'--manifest',str(p/'manifest.tsv'),'--out',str(p/'out'),'--blacklist',str(p/'black.bed')],check=True)
+   subprocess.run(['python3',str(ROOT/'scripts/consensus.py'),'--manifest',str(p/'manifest.tsv'),'--out',str(p/'out'),'--blacklist',str(p/'black.bed'),'--blacklist-mode','drop'],check=True)
    self.assertEqual((p/'out/master.bed').read_text(),'')
    self.assertEqual(json.loads((p/'out/provenance.json').read_text())['groups']['g']['independent_sample_count'],2)
+ def test_consensus_blacklist_subtracts_only_overlapping_bases(self):
+  with tempfile.TemporaryDirectory() as d:
+   p=Path(d);(p/'a.bed').write_text('chr1\t100\t180\n');(p/'black.bed').write_text('chr1\t145\t148\n')
+   (p/'manifest.tsv').write_text('group\tbiological_sample_id\tpeaks_bed\ng\ta\ta.bed\n')
+   subprocess.run(['python3',str(ROOT/'scripts/consensus.py'),'--manifest',str(p/'manifest.tsv'),'--out',str(p/'out'),'--blacklist',str(p/'black.bed')],check=True)
+   self.assertEqual((p/'out/g.consensus.bed').read_text(),'chr1\t100\t145\nchr1\t148\t180\n')
+ def test_reproducible_union_preserves_full_supported_sample_intervals(self):
+  with tempfile.TemporaryDirectory() as d:
+   p=Path(d);(p/'a.bed').write_text('chr1\t100\t180\n');(p/'b.bed').write_text('chr1\t120\t200\n')
+   (p/'manifest.tsv').write_text('group\tbiological_sample_id\tpeaks_bed\ng\ta\ta.bed\ng\tb\tb.bed\n')
+   subprocess.run(['python3',str(ROOT/'scripts/consensus.py'),'--manifest',str(p/'manifest.tsv'),'--out',str(p/'out'),'--universe','reproducible_union'],check=True)
+   self.assertEqual((p/'out/master.bed').read_text(),'chr1\t100\t200\tpeak_00000001\n')
  def test_release_missing_required_fails(self):
   with tempfile.TemporaryDirectory() as d:
    p=Path(d);(p/'release.json').write_text(json.dumps({'project':'x','artifacts':[{'path':'absent'}]}))
@@ -27,7 +39,7 @@ class Audit(unittest.TestCase):
    (p/'logs.tsv').write_text('sample_id\tmode\tbowtie2_log\ns1\toverlap\talign.log\n')
    subprocess.run(['python3',str(ROOT/'scripts/spikein_audit.py'),'--manifest',str(p/'logs.tsv'),'--out',str(p/'out')],check=True)
    with (p/'out/counts.tsv').open() as f:z=list(csv.DictReader(f,delimiter='\t'))[0]
-   self.assertEqual(z['spikein_fragments'],'20');self.assertEqual(z['calibration_accepted'],'False')
+   self.assertEqual(z['concordant_unique_pairs'],'15');self.assertEqual(z['concordant_multi_pairs'],'5');self.assertEqual(z['concordant_pairs_diagnostic_only'],'20');self.assertEqual(z['calibration_accepted'],'False')
  def test_release_hash(self):
   with tempfile.TemporaryDirectory() as d:
    p=Path(d);(p/'x.tsv').write_text('x');(p/'release.json').write_text(json.dumps({'project':'x','artifacts':[{'path':'x.tsv'}]}))

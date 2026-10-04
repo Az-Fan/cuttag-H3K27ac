@@ -155,9 +155,9 @@ class Maturity(unittest.TestCase):
         (self.p/'m.tsv').write_text('\n'.join(lines)+'\n')
         subprocess.run([sys.executable,str(ROOT/'scripts/spikein_audit.py'),'--manifest',str(self.p/'m.tsv'),'--out',str(self.p/'audit')],check=True,capture_output=True)
         with (self.p/'audit/counts.tsv').open() as f:rows=list(csv.DictReader(f,delimiter='\t'))
-        self.assertAlmostEqual(float(rows[0]['size_factor']),.5)
-        self.assertAlmostEqual(float(rows[1]['size_factor']),2)
-        self.assertAlmostEqual(float(rows[2]['size_factor']),1)
+        self.assertAlmostEqual(float(rows[0]['diagnostic_size_factor_not_for_DE']),.5)
+        self.assertAlmostEqual(float(rows[1]['diagnostic_size_factor_not_for_DE']),2)
+        self.assertAlmostEqual(float(rows[2]['diagnostic_size_factor_not_for_DE']),1)
 
     def test_nextflow_ignored_failure_remains_visible(self):
         from audit_run import audit

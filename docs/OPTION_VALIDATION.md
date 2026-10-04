@@ -8,9 +8,9 @@
 |---|---|---|
 | 重复片段 | 合成 proper-pair BAM：保留/去除 duplicate 标记，与 MAPQ 20/30 交叉，共 4 组；准确得到 3、2、2、1 个片段 | H3K27ac 模板以保留重复作为明确基线，去重作敏感性分析；需同时考虑文库复杂度、深度、IgG 和位点分布。软件测试不能决定真实重复是否为 PCR 产物 |
 | MAPQ | 同上，含 MAPQ 10、25、60 的配对片段；另有两端 MAPQ 不一致的测试 | 默认两端 MAPQ≥20；30 是更严格的敏感性候选。不能仅因总片段数较多选择阈值 |
-| Spike-in 比对 | 两批项目各取 Control/KD 的一个已剪切技术单元，各前 20,000 对，同一子集运行 4 种模式 | 当前数据优先验证 end-to-end + overlap；保留 no-overlap 诊断，dovetail/local 不作无条件默认。子集计数不能进入正式校准 |
+| Spike-in 比对/计数 | 两批项目各取 Control/KD 的一个已剪切技术单元，各前 20,000 对，同一子集运行 4 种模式；模板另实现 spike-in-only BAM proper-primary-pair、双端 MAPQ20/30 fragment 计数和 target+spike-in 竞争比对 | 当前数据优先验证 end-to-end + overlap；保留 no-overlap 诊断，dovetail/local 不作无条件默认。子集计数不能进入正式校准；完整 paired-fragment 结果需按新流程生成并审阅 |
 | IgG 策略 | 固定 MACS2 2.2.7.1 容器，BAMPE、keep-dup all：IgG 默认缩放 / scale-to-large / 无 IgG，共 3 组；均找回合成富集位点 | 优先评估匹配 IgG 的深度和结构；默认缩放是基线，另两组作敏感性证据。不能以峰数最大选策略。浅 IgG 放大可能放大噪声 |
-| 共识峰支持度 | 独立生物样本支持度、技术文件重复不增加支持、相接区间不算重叠、blacklist 去除都有行为测试 | 默认组内 2/3，向上取整。`--fraction` 可在独立计划中改变；比较共识覆盖范围、重复一致性、下游方向稳定性 |
+| 共识峰支持度/黑名单 | 独立生物样本支持度、技术文件重复不增加支持、相接区间不算重叠、blacklist 逐碱基扣除都有行为测试 | 默认组内 2/3，向上取整；support-core 与 reproducible-union 两个 universe 并列评估。whole-interval drop 仅保留为敏感性模式；比较共识覆盖范围、重复一致性、下游方向稳定性 |
 | 归一化 | 300 个合成峰 × 6 个样本，常规 DESeq2 和已知 spike-in 系数分别实跑；验证对比方向、size factor、normalized count 除法 | 两种模型回答的尺度不同，不按显著峰更多来选。确认等量、加入时点、计数方法和解释范围后才可接受 spike-in |
 | ORA / motif 背景 | tested universe 的过滤/坐标/双向基因测试；clusterProfiler 实跑植入通路；HOMER 已知 motif 在合成 DNA 上实跑；不足窗口明确跳过 | 使用同一区域类别、同一统计宇宙背景；报告 ID 映射损失。远端峰最近基因只作关联。当前不声称 de novo motif、GSEA、不同峰调用器全面比较已验收 |
 

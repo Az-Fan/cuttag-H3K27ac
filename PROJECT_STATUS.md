@@ -1,4 +1,4 @@
-# v0.4.0 验收状态
+# v0.4.1 验收状态
 
 本版已形成可复用的项目操作闭环：初始化 → 环境与参考检查 → nf-core 上游 → 审核 → 自动下游计划 → 模型/注释/富集/motif → 可搬迁交付。采用分阶段审核，不会为追求一键运行而自动接受生物重复、IgG、spike-in 或统计模型。
 
@@ -14,6 +14,9 @@
 - tested gene/motif universe、promoter/distal 分层、双向基因和 ORA 映射损失报告。
 - MACS2 固定容器、Bioconductor 数据依赖安装/校验、运行时 doctor、可重复 acceptance 与契约 CI。
 - 实际复制交付文件、相对 IGV 路径、可点击入口、搬迁后的哈希验证。
+- blacklist 默认逐碱基扣除，另有 whole-interval-drop 敏感性开关；consensus 支持 reproducible-union 与 support-core 两种可比较定义。
+- spike-in-only BAM 正式 fragment counter：proper primary pair、双端 MAPQ20/30、参考字典约束、技术 unit 到 biological sample 汇总和按校准组系数；另有竞争参考跨映射审计。Bowtie2 summary 明确只属诊断。
+- peak caller sensitivity 现在覆盖 narrow/broad × 默认 IgG / scale-to-large / no-IgG，共 6 组合；轨迹输入禁止部分样本 spike-in、部分 CPM。
 
 ## 已有验收证据
 
@@ -23,6 +26,7 @@
 - 官方 nf-core/cutandrun 3.2.2 `test,apptainer` 运行结束：退出码 0；133 个任务完成，2 个 Preseq 失败被上游忽略。任务级状态单独保存，不能表述成“所有任务无错误”。
 - 模板默认 MACS2 narrow、保留 target 重复、CPM 参数组合也已在官方微型输入上独立跑完，退出码 0；具体任务警告及峰产物数见 [模板参数测试](docs/validation/2026-10-03/template_params_test.json)。
 - 原生 MACS2 二进制故障已实际复现；默认改为已验证且固定 SHA256 的 2.2.7.1 容器。Pixi 环境缺失的 GenomeInfoDbData/GO.db/TxDb 数据包已按注册表校验补齐；人类 OrgDb 已加入锁文件和安装步骤。
+- v0.4.1：46 项 Python 契约/回归测试、spike-in BAM/竞争映射合成 fixture、Python 编译和 `cuttag.py validate --allow-missing` 通过；六组 MACS2 narrow/broad × 背景合成比较均找回植入富集位点。`acceptance.py` 已纳入 spike-in fixture。
 
 原始集成验收记录和后续补充验证见 [docs/validation/2026-10-03](docs/validation/2026-10-03)。只保留小型验证摘要进入 Git；原始 reads、BAM、数据库、缓存和完整运行结果不入库。
 
@@ -30,7 +34,7 @@
 
 1. 当前默认支持 paired-end H3K27ac、MACS2 narrow、两组独立样本 `~ condition`。批次、配对、复杂交互设计及其他靶标/调用器需单独实现或配置并验收；不会静默简化模型。
 2. 第一批独立生物重复仍须实验记录确认；第二批已确认 1 vs 1，只能描述性分析。模板不替用户批准这些事实。
-3. spike-in 子集结果支持 overlap 候选，但仍需合并技术单元后的全量计数、双端质量/多重比对策略，以及等量、加入阶段和校准范围证据。
+3. spike-in 子集结果支持 overlap 候选；新计数器已通过合成验证，但真实数据的全量 MAPQ fragment 复核尚未完成。仍需 cross-map 全量/代表性审查，以及等量、加入阶段和校准范围证据。当前两批数据都未由本版自动接受为正式归一化。
 4. IgG 策略、去重、MAPQ、共识支持度和归一化在具体项目上的优劣，需要真实数据的位点检查、重复一致性与敏感性比较。软件验收不能代替该判断。
 5. 显式输入适配器的布局契约已有测试；跨所有 nf-core 参数/版本的自动识别、原两批全量重新分析、de novo motif/GSEA、多个峰调用器与全部组合的性能比较，不在本版已验收声明内。
 6. 交付包仅验证文件及链接资源，仍标记 REVIEW_REQUIRED。没有执行破坏性清理，也不会自动删除原始数据。

@@ -1,6 +1,6 @@
 [workspace]
 name = "cuttag-project-template"
-version = "0.4.0"
+version = "0.4.1"
 channels = ["conda-forge", "bioconda"]
 platforms = ["linux-64"]
 
@@ -31,3 +31,4 @@ analysis = { features = ["analysis"] }
 validate = "python scripts/cuttag.py validate --allow-missing"
 plan = "python scripts/cuttag.py plan --stage alignment"
 selftest = "python -m unittest discover -s tests -v"
+spikein-fixture = "python tests/run_spikein_fixture.py"

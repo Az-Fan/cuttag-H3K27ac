@@ -3,6 +3,7 @@
 import argparse
 import csv
 import itertools
+import statistics
 import json
 from pathlib import Path
 from consensus import intervals, merge
@@ -37,7 +38,7 @@ def compare(manifest, out):
         original = intervals(path)
         merged = merge(original)
         grouped[key] = merged
-        summary.append(dict(row, peak_count=len(original), union_bp=sum(e-s for _, s, e in merged), sha256=sha256(path)))
+        summary.append(dict(row, peak_count=len(original), median_width=statistics.median([e-s for _,s,e in original]) if original else None, union_bp=sum(e-s for _, s, e in merged), sha256=sha256(path)))
     if not rows:
         raise ValueError('Empty manifest')
     pairs = []

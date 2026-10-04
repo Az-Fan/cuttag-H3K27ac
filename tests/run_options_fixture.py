@@ -42,15 +42,15 @@ manifest = a.out/'peaks.tsv'
 manifest.write_text('sample_id\ttarget_bam\tcontrol_bam\ns1\ttarget.bam\tcontrol.bam\n')
 subprocess.run([sys.executable,str(ROOT/'scripts/peak_diagnostics.py'),'--manifest',str(manifest),'--out',str(a.out/'peaks'),'--gsize','1000000','--execute']+(['--macs2-container',str(a.macs2_container.resolve())] if a.macs2_container else []),check=True,cwd='/tmp')
 reports=json.loads((a.out/'peaks/diagnostics.json').read_text())
-assert len(reports)==3 and all(r['state']=='COMPUTATIONAL_PASS' for r in reports)
+assert len(reports)==6 and all(r['state']=='COMPUTATIONAL_PASS' for r in reports)
 # Every method must recover at least one planted enriched locus, not merely exit zero.
 for report in reports:
-    path=a.out/'peaks'/('s1_'+report['strategy'])/'s1_peaks.narrowPeak'
+    path=a.out/'peaks'/('s1_'+report['strategy'])/('s1_peaks.'+report['shape']+'Peak')
     peaks=[line.split() for line in path.read_text().splitlines()]
     assert any(int(r[1])<10050 and int(r[2])>10000 for r in peaks),report
 with (a.out/'comparison.tsv').open('w') as f:
     w=csv.writer(f,delimiter='\t');w.writerow(['sample_id','strategy','peaks_bed'])
-    for r in reports:w.writerow(['s1',r['strategy'],'peaks/s1_'+r['strategy']+'/s1_peaks.narrowPeak'])
+    for r in reports:w.writerow(['s1',r['strategy'],'peaks/s1_'+r['strategy']+'/s1_peaks.'+r['shape']+'Peak'])
 subprocess.run([sys.executable,str(ROOT/'scripts/compare_peaks.py'),'--manifest',str(a.out/'comparison.tsv'),'--out',str(a.out/'comparison')],check=True)
 (a.out/'acceptance.json').write_text(json.dumps({'state':'PASS','scope':'synthetic software correctness, not real-sample strategy acceptance','fragment_policies':policies,'peak_methods':reports},indent=2))
-print('PASS: 4 MAPQ/duplicate policies and 3 MACS2 background strategies; planted signal recovered')
+print('PASS: 4 MAPQ/duplicate policies and 6 MACS2 narrow/broad × background strategies; planted signal recovered')

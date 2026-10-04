@@ -1,4 +1,4 @@
-# CUT&Tag 项目模板 v0.4.0
+# CUT&Tag 项目模板 v0.4.1
 
 从 ACLY-CUTTAG 两批项目沉淀的独立模板，面向 paired-end H3K27ac：提供上游运行、科学审核停点、可续跑下游、可选方案对照和可搬迁交付。支持范围及操作步骤见 [操作指南](docs/OPERATIONS.md)，方法细节见 [SOP](docs/SOP.md)。
 
@@ -56,7 +56,7 @@ pixi run -e analysis python scripts/workflow.py --workflow results/downstream_01
 
 - 技术拆分不是生物重复；1 vs 1 只允许描述性分析。只支持 `~ condition`，不隐式忽略批次/配对因素。
 - 重复片段、MAPQ、IgG 缩放和峰集规则都有明确基线和敏感性测试；不按峰数最多选方案。
-- Spike-in 需确认身份、等量、加入阶段、计数方法及解释范围；子集测试不替代全量计数。
+- Spike-in 正式计数使用 spike-in-only proper paired fragments、两端 MAPQ 门槛及技术 unit 到 biological sample 汇总；竞争比对、等量、加入阶段和解释范围仍需审核，子集测试不替代全量计数。
 - ORA/motif 使用明确的 tested universe，记录基因映射损失；邻近基因不等于已验证调控靶点。
 - 缺失 QC 明确为 NA；缺必需产物会失败，计算通过不自动改为科学接受。
 

@@ -1,3 +1,11 @@
+# v0.4.1 — spike-in 与峰策略审计完善
+
+- 默认逐碱基扣除 blacklist；支持对照用的 whole-interval drop，并显式提供 support-core / reproducible-union 共识 universe。
+- 新增 spike-in-only paired-fragment 计数器：proper primary pairs、双端 MAPQ20/30、参考字典校验、技术 unit 汇总到 biological sample；加入 target+spike-in 竞争比对审计。
+- Bowtie2 summary 审计拆分唯一/多重比对，并禁止将日志估算误作为正式 DE/轨迹因子。
+- MACS2 诊断扩展为 narrow/broad × 3 种 IgG 背景；nf-core adapter 支持对应 broad/narrow 产物。
+- 轨迹拒绝同一 manifest 混用 spike-in 与 CPM；补充合成端到端 fixture、SOP 与策略验证说明。
+
 # v0.4.0 — 可重复验收与项目操作闭环
 
 - 干净初始化，nf-core 3.2.2 严格结果适配，显式 BAM/peak 登记和下游 DAG 计划。

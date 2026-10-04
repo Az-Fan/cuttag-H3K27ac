@@ -16,7 +16,7 @@ def write_table(path, columns, rows):
         writer.writerows(rows)
 
 
-def plan(config, artifacts, out, mapq, fraction):
+def plan(config, artifacts, out, mapq, fraction, universe="support_core", blacklist_mode="subtract", min_width=1):
     root, cfg, samples = load(config)
     report = validate(root, cfg, samples, True)
     if report['errors']:
@@ -65,8 +65,8 @@ def plan(config, artifacts, out, mapq, fraction):
     for name, items in [('peaks.tsv', peaks), ('fragments.tsv', fragments), ('qc.tsv', metrics), ('metadata.tsv', metadata)]:
         write_table(out/name, list(items[0]), items)
     blacklist = resolve(root, cfg['reference']['blacklist'])
-    add('consensus', 'consensus.py', ['--manifest', out/'peaks.tsv', '--fraction', fraction, '--blacklist', blacklist, '--out', out/'consensus'],
-        [out/'peaks.tsv', blacklist] + [r['peaks_bed'] for r in rows], [out/'consensus/master.bed', out/'consensus/provenance.json'], ['reference'])
+    add('consensus', 'consensus.py', ['--manifest', out/'peaks.tsv', '--fraction', fraction, '--blacklist', blacklist, '--universe', universe, '--blacklist-mode', blacklist_mode, '--min-width', min_width, '--out', out/'consensus'],
+        [out/'peaks.tsv', blacklist] + [r['peaks_bed'] for r in rows], [out/'consensus/master.bed', out/'consensus/provenance.json', out/'consensus/interval_decisions.json'], ['reference'])
     dependencies = ['fragment_'+r['sample_id'] for r in rows] + ['consensus']
     fragment_files = [r['fragments_bed'] for r in fragments]
     add('counts', 'count_fragments.py', ['--samples', out/'fragments.tsv', '--peaks', out/'consensus/master.bed', '--out', out/'counts.tsv'],
@@ -84,7 +84,7 @@ def plan(config, artifacts, out, mapq, fraction):
         'formal_inference_eligible': report['formal_inference_eligible'], 'warnings': report['warnings'],
         'next': 'Review upstream/peak/independence decisions, then prepare model review and run_differential.py. No formal model is launched by this plan.',
         'fragment_policy': {'mapq_both_mates': mapq, 'duplicates': 'retained', 'proper_pairs': True},
-        'consensus_support_fraction': fraction}, indent=2)+'\n')
+        'consensus_support_fraction': fraction,'universe':universe,'blacklist_mode':blacklist_mode,'min_width':min_width}, indent=2)+'\n')
     return out/'workflow.json'
 
 
@@ -95,7 +95,10 @@ if __name__ == '__main__':
     p.add_argument('--out', required=True, type=Path)
     p.add_argument('--mapq', type=int, default=20)
     p.add_argument('--fraction', type=float, default=2/3)
+    p.add_argument('--universe',choices=['support_core','reproducible_union'],default='support_core')
+    p.add_argument('--blacklist-mode',choices=['subtract','drop'],default='subtract')
+    p.add_argument('--min-width',type=int,default=1)
     a = p.parse_args()
-    if not 0 <= a.mapq <= 255 or not 0 < a.fraction <= 1:
+    if not 0 <= a.mapq <= 255 or not 0 < a.fraction <= 1 or a.min_width<1:
         p.error('Invalid MAPQ/fraction')
-    print(plan(a.config.resolve(), a.artifacts.resolve(), a.out.resolve(), a.mapq, a.fraction))
+    print(plan(a.config.resolve(), a.artifacts.resolve(), a.out.resolve(), a.mapq, a.fraction, a.universe, a.blacklist_mode, a.min_width))

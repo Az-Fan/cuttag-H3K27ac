@@ -14,6 +14,16 @@
 
 核查 Git 46e2d24 后发现并修复多处执行门禁和数据契约缺陷，详细证据、13 项问题及未完成清单写入 docs/AUDIT.md。新增绑定输入/证据哈希的 review、配置化差异入口和 reviewer 草稿生成器；直接 R 也核对 review。26 项 Python 测试、微型真实工具流程、合成模型和本地 ChIPseeker 注释实测通过。现状明确为开发模板，尚未达到完整稳定全流程标准。
 
+## 2026-10-04 — v0.4.1 spike-in/peak sensitivity
+
+- Replaced whole-consensus-interval blacklist removal with configurable basewise subtraction (default) and retained drop mode only for sensitivity.
+- Added paired lambda fragment counting from spike-in-only BAMs with pair-level MAPQ20/30, primary/proper-pair checks, reference dictionary verification and biological-sample aggregation. Bowtie2 summary audit now reports unique and multi pairs separately and labels all size factors diagnostic-only.
+- Added competitive target+spike-in mapping audit for matched FASTQ subsets; added synthetic integration fixture.
+- Expanded MACS2 comparison to narrow/broad crossed with default IgG scaling, scale-to-large and no-IgG diagnostic; supports narrow/broad import and interval-width summaries.
+- Enforced consistent spike-in scaling across all tracks in a manifest.
+- Validation: 44 unittest contracts pass; spike-in fixture pass; six MACS2 synthetic options pass with planted loci recovered; template `validate --allow-missing` has no errors and correctly blocks formal inference for example 1-vs-1 design.
+- Real source evidence: Batch2 existing comparison supports narrow primary + broad sensitivity and shows IgG processing materially changes calls. Full paired-fragment MAPQ re-count from all source BAMs was not completed in this session; Batch1 has only Bowtie2 summary logs, not lambda BAMs. No scientific spike-in calibration is accepted.
+
 ## 2026-10-03 — v0.4.0 项目闭环与可选方案验收
 
 补齐初始化、参考检查、严格上游适配、下游 DAG、内容一致续跑、自动片段 QC、tested universe、可搬迁交付及环境验收。保留原实验生物重复、IgG、spike-in 与模型审核门禁。新增参数对照执行器与峰覆盖比较，记录四个真实技术单元的 spike-in 子集结果；未执行两批全量重分析，未自动接受校准。

@@ -12,7 +12,10 @@ if not rows:raise ValueError('Empty track manifest')
 if len(sizes)!=len(header) or any(n<=0 for _,n in header):raise ValueError('Invalid/duplicate chromosome sizes')
 ids=[r['sample_id'] for r in rows]
 if len(ids)!=len(set(ids)):raise ValueError('Duplicate track sample IDs')
-if any(r.get('spikein_scale') for r in rows):
+for r in rows:r['spikein_scale']=(r.get('spikein_scale') or '').strip()
+has_scale=[bool((r.get('spikein_scale') or '').strip()) for r in rows]
+if any(has_scale) and not all(has_scale):raise ValueError('All samples must have spikein_scale, or all must omit it')
+if all(has_scale):
  if not a.review:raise ValueError('Spike-in tracks require calibration review')
  review=require_review(a.review,['spikein_counting_accepted','spikein_calibration_accepted'],{'track_manifest_sha256':a.manifest,'sizes_sha256':a.sizes})
  sp=review.get('spikein',{})

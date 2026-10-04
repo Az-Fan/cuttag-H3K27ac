@@ -48,7 +48,7 @@ python3 scripts/import_nfcore.py --config config/project.json \
   --run results/runs/production_01 --out results/import_01
 ```
 
-适配器只接受 nf-core/cutandrun 3.2.2、Bowtie2、MACS2 narrow、target duplicate-retained 的已完成生产输出；逐项核对配置/样本快照，缺失产物不猜测替代文件。旧项目或不同布局通过 `examples/artifacts.tsv` 显式登记：每生物样本一个已经合并的 BAM 和一个选定峰文件。`bam_policy=duplicates_retained` 是需审核的声明，不能恢复已经去掉的重复片段。内容相同的 BAM 不允许登记为两个统计样本。
+适配器只接受 nf-core/cutandrun 3.2.2、Bowtie2、MACS2 narrow 或 broad、target duplicate-retained 的已完成生产输出；逐项核对配置/样本快照，缺失产物不猜测替代文件。旧项目或不同布局通过 `examples/artifacts.tsv` 显式登记：每生物样本一个已经合并的 BAM 和一个选定峰文件。`bam_policy=duplicates_retained` 是需审核的声明，不能恢复已经去掉的重复片段。内容相同的 BAM 不允许登记为两个统计样本。
 
 ```bash
 pixi run -e analysis python scripts/plan_downstream.py --config config/project.json \
