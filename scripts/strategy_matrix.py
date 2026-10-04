@@ -35,22 +35,13 @@ def source_sha256():
     return h.hexdigest()
 
 
-def source_sha256():
-    root = Path(__file__).resolve().parent.parent
-    h = hashlib.sha256()
-    for path in sorted((root / 'scripts').glob('*.py')) + [root / 'pixi.lock']:
-        h.update(path.name.encode())
-        h.update(sha(path).encode())
-    return h.hexdigest()
-
-
 def expand(spec):
     sets = spec.get('artifact_sets')
     if not isinstance(sets, list) or not sets:
         raise ValueError('matrix requires nonempty artifact_sets')
     axes = spec.get('axes', {})
     defaults = {'mapq': [20], 'remove_duplicates': [False], 'fraction': [2/3],
-                'universe': ['support_core'], 'blacklist_mode': ['subtract'], 'min_width': [1]}
+                'universe': ['support_core'], 'blacklist_mode': ['subtract'], 'min_width': [50]}
     unknown = set(axes) - set(defaults)
     if unknown:
         raise ValueError('Unknown strategy axes: ' + ', '.join(sorted(unknown)))
@@ -119,8 +110,6 @@ def build(config, matrix_path, out, max_candidates=48, execute=False, resume=Fal
             raise ValueError('Config or matrix changed since this run; use a new output directory')
         if data.get('template_source_sha256') != source_sha256():
             raise ValueError('Template code or environment lock changed since this run; use a new output directory')
-        if data.get('template_source_sha256') != source_sha256():
-            raise ValueError('Template code or environment lock changed since this run; use a new output directory')
         records = data['candidates']
         if [x['candidate_id'] for x in records] != [x['candidate_id'] for x in candidates]:
             raise ValueError('Expanded candidate list changed; use a new output directory')
@@ -138,7 +127,6 @@ def build(config, matrix_path, out, max_candidates=48, execute=False, resume=Fal
             records.append(record)
         data = {'schema_version': 1, 'state': 'REVIEW_REQUIRED', 'config': str(config.resolve()),
                 'config_sha256': sha(config), 'matrix': str(matrix_path), 'matrix_sha256': sha(matrix_path),
-                'template_source_sha256': source_sha256(),
                 'template_source_sha256': source_sha256(),
                 'baseline_candidate': spec.get('baseline_candidate'), 'candidate_count': len(records),
                 'candidates': records,

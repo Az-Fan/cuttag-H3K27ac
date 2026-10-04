@@ -37,7 +37,7 @@ subprocess.run(command,check=True,env=env)
 subprocess.run(command+['--resume'],check=True,env=env)
 assert all(r['resumed'] for r in json.loads((a.out/'results/execution/workflow_status.json').read_text())['steps'])
 # Exercise the new strategy-matrix planner/executor and fixed-universe comparator end to end.
-(fixture/'matrix.json').write_text(json.dumps({'baseline_candidate':'fixture_q20_keepdup_f0p6667_support_core_subtract_w1',
+(fixture/'matrix.json').write_text(json.dumps({'baseline_candidate':'fixture_q20_keepdup_f0p6667_support_core_subtract_w50',
  'artifact_sets':[{'id':'fixture','manifest':'artifacts.tsv'}], 'axes':{'mapq':[20,30]}}))
 matrix_out=a.out/'results/strategy_matrix'
 subprocess.run([sys.executable,str(a.out/'scripts/strategy_matrix.py'),'--config',str(a.out/'config/project.json'),

@@ -1,4 +1,4 @@
-# v0.5.0 开发状态
+# v0.5.1 开发状态
 
 本版已形成可复用的项目操作闭环：初始化 → 环境与参考检查 → nf-core 上游 → 审核 → 自动下游计划 → 模型/注释/富集/motif → 可搬迁交付。采用分阶段审核，不会为追求一键运行而自动接受生物重复、IgG、spike-in 或统计模型。
 
@@ -19,6 +19,8 @@
 - peak caller sensitivity 覆盖 narrow/broad × 默认 IgG / scale-to-large / no-IgG × keep-dup all/auto，共 12 组合；轨迹输入禁止部分样本 spike-in、部分 CPM。
 - 新增方案矩阵：多个 caller/background artifact sets 可与 MAPQ、duplicate、consensus fraction、peak universe 组合；每个候选保存独立 DAG、状态和输入哈希，矩阵可在配置/输入不变时续跑。
 - 新增固定 pooled candidate peak union 的 FRiP、重复样本 raw-count correlation、master interval overlap 对照报告；新增经过审核的 DE complete tables 的 reciprocal-overlap/LFC/direction 对照入口。
+- 共识峰 blacklist subtraction 后默认移除短于 50 bp 的残片；策略矩阵纳入 1/50/100 bp 的完整敏感性轴，50 bp 仅为可复核的模板基线而非普适生物学阈值。策略报告对固定 pooled-union 区间重计数并给出可跨策略比较的 common-universe replicate correlation，同时保留候选自身峰集相关性作为内部 QC。
+- spike-in competitive cross-map manifest 与正式计数统一 `sample_id / biological_sample_id / unit_id` 身份，可分别报告技术 unit 并追溯到统计样本；删除策略矩阵中重复的源码哈希函数、校验和 JSON key。
 - Spike-in formal manifest 强制填写 calibration_group；目标组内仅 target 生物样本参与 size factor，单独输出 target biological count 表；QNAME 分组使用 samtools collate 流式处理，未比对 pair 纳入竞争比对分类。
 - MACS2 诊断允许仅 no-IgG 运行，并支持显式选择 shape/background/`keep-dup all|auto` 网格。
 
@@ -43,7 +45,12 @@
 5. 显式输入适配器的布局契约已有测试；跨所有 nf-core 参数/版本的自动识别、原两批全量重新分析、de novo motif/GSEA、多个峰调用器与全部组合的性能比较，不在本版已验收声明内。
 6. 交付包仅验证文件及链接资源，仍标记 REVIEW_REQUIRED。没有执行破坏性清理，也不会自动删除原始数据。
 
-## v0.5.0 本机验收
+## v0.5.1 本机验收
+
+- Pixi 分析环境下完整 `acceptance.py` 9/9 通过；54 项 Python 单元/契约测试通过。新增验证覆盖 common-universe replicate correlation、blacklist subtraction 后的 50 bp 默认最小宽度和 crossmap 的 unit/biological sample 身份追溯。完整命令、状态和 58 个源码哈希见 [v0.5.1 验收记录](docs/validation/2026-10-04/local_acceptance_v051.json)。
+- 合成项目 fixture 实际运行两个 strategy candidates，并在 pooled union 上统一重计数；项目初始化、片段/共识/count/QC/track DAG、续跑、交付搬迁验证均通过。依然只验证软件行为，不代表具体真实实验的候选方案已完成或被接受。
+
+## v0.5.0 本机验收（历史版本）
 
 - Pixi 分析环境下 `acceptance.py` 9/9 通过，其中包括 52 项 Python 单元/契约测试、spike-in BAM/竞争比对、真实微型下游方案矩阵 DAG、固定 pooled-union FRiP 比较、MACS2 12 种 shape/background/duplicate 组合、两种 DESeq2 归一化、注释和 motif fixture。完整摘要及脚本哈希见 [本版验收记录](docs/validation/2026-10-04/local_acceptance.json)。
 - 新 matrix 支持候选计划登记、逐项运行、单候选失败保留和输入/模板未变化后的续跑。模型比较 fixture 核实了审核标志、相同设计/阈值/样本元数据哈希以及区域效应与方向变化汇总。

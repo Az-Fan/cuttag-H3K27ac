@@ -6,6 +6,7 @@ import itertools
 import json
 import math
 import statistics
+import subprocess
 from pathlib import Path
 
 from collect_qc import collect
@@ -37,6 +38,48 @@ def correlation(xs, ys):
 def replicate_correlations(plan_dir):
     counts = read_tsv(plan_dir / 'counts.tsv')
     metadata = read_tsv(plan_dir / 'metadata.tsv')
+    by_condition = {}
+    for row in metadata:
+        by_condition.setdefault(row['condition'], []).append(row['sample_id'])
+    output = []
+    for condition, samples in sorted(by_condition.items()):
+        for left, right in itertools.combinations(sorted(samples), 2):
+            xs = [math.log1p(float(row[left])) for row in counts]
+            ys = [math.log1p(float(row[right])) for row in counts]
+            output.append({'condition': condition, 'left_sample': left, 'right_sample': right,
+                           'tested_peaks': len(counts), 'pearson_log1p_raw_counts': correlation(xs, ys)})
+    values = [x['pearson_log1p_raw_counts'] for x in output if x['pearson_log1p_raw_counts'] is not None]
+    return output, statistics.mean(values) if values else None
+
+
+def count_common_universe(fragments_table, peaks_bed, out_tsv):
+    """Count every candidate's fragments over the same merged evaluation intervals."""
+    source = read_tsv(fragments_table)
+    peaks = merge(intervals(peaks_bed))
+    if not source or not peaks:
+        raise ValueError('Common-universe counting needs samples and evaluation peaks')
+    columns = []
+    peak_file = peaks_bed.resolve()
+    for item in source:
+        fragment = Path(item['fragments_bed'])
+        fragment = fragment if fragment.is_absolute() else fragments_table.parent / fragment
+        command = ['bedtools', 'coverage', '-counts', '-a', str(peak_file), '-b', str(fragment.resolve())]
+        result = subprocess.run(command, text=True, capture_output=True, check=True)
+        rows = [line.split('\t') for line in result.stdout.splitlines()]
+        if [(r[0], int(r[1]), int(r[2])) for r in rows] != peaks:
+            raise ValueError('Common-universe coverage coordinates/order changed')
+        columns.append((item['sample_id'], [int(r[-1]) for r in rows]))
+    with out_tsv.open('w') as f:
+        writer = csv.writer(f, delimiter='\t')
+        writer.writerow(['peak_id', 'chrom', 'start', 'end'] + [x[0] for x in columns])
+        for i, (chrom, start, end) in enumerate(peaks, 1):
+            writer.writerow(['evaluation_%08d' % i, chrom, start, end] + [x[1][i-1] for x in columns])
+    return out_tsv
+
+
+def correlations_from_counts(counts_path, metadata_path):
+    counts = read_tsv(counts_path)
+    metadata = read_tsv(metadata_path)
     by_condition = {}
     for row in metadata:
         by_condition.setdefault(row['condition'], []).append(row['sample_id'])
@@ -124,6 +167,12 @@ def compare(matrix_path, out):
         frip_by_candidate[row['candidate_id']] = values
         summary['pooled_union_frip_mean'] = statistics.mean(values.values())
         summary['pooled_union_frip_by_sample'] = values
+        common_counts = out / (row['candidate_id'] + '.common_universe_counts.tsv')
+        count_common_universe(fragments_table, evaluation_bed, common_counts)
+        summary['common_universe_within_condition_replicate_correlations'], summary['common_universe_mean_replicate_correlation'] = correlations_from_counts(
+            common_counts, Path(row['plan_dir']) / 'metadata.tsv')
+        summary['common_universe_counts'] = str(common_counts)
+        summary['common_universe_counts_sha256'] = sha256(common_counts)
 
     pairwise = []
     for (left, left_summary, a, _), (right, right_summary, b, _) in itertools.combinations(passed, 2):
@@ -137,17 +186,18 @@ def compare(matrix_path, out):
     with (out / 'candidate_metrics.tsv').open('w') as f:
         keys = ['candidate_id', 'state', 'metrics_state', 'artifact_set', 'mapq', 'remove_duplicates',
                 'fraction', 'universe', 'blacklist_mode', 'peak_count', 'median_width', 'union_bp',
-                'mean_replicate_correlation', 'pooled_union_frip_mean']
+                'mean_replicate_correlation', 'common_universe_mean_replicate_correlation', 'pooled_union_frip_mean']
         writer = csv.DictWriter(f, fieldnames=keys, delimiter='\t', extrasaction='ignore')
         writer.writeheader(); writer.writerows(summaries)
     baseline = matrix.get('baseline_candidate')
     data = {'state': 'REVIEW_REQUIRED', 'candidate_metrics': summaries, 'pairwise_peak_agreement': pairwise,
             'evaluation_peak_set': str(evaluation_bed), 'evaluation_peak_set_sha256': sha256(evaluation_bed),
             'baseline_candidate': baseline,
-            'recommendation': 'No method is selected automatically. Review QC, replicate agreement, peak coverage and accepted differential-model stability. Pooled-union FRiP uses the same evaluation intervals for each candidate; it does not replace per-candidate FRiP or experimental review.',
+            'recommendation': 'No method is selected automatically. Review QC, replicate agreement, peak coverage and accepted differential-model stability. Pooled-union FRiP and common-universe replicate correlation use the same evaluation intervals for each candidate; candidate-specific correlation uses each candidate own peak set and is descriptive only for within-candidate QC.',
             'limitations': ['This report does not run DESeq2. Add reviewed model outputs before accepting a final strategy.',
                             'Peak overlap and pooled-union FRiP do not establish biological validity.',
-                            'Candidates must contain the same biological samples to be compared.']}
+                            'Candidates must contain the same biological samples to be compared.',
+                            'Common-universe replicate correlation is comparable across candidates; candidate-specific correlation is computed on different regions and should not rank strategies.']}
     (out / 'comparison.json').write_text(json.dumps(data, indent=2) + '\n')
     return data
 

@@ -68,7 +68,7 @@ def reproducible_union(sample_intervals,threshold):
  return merge(selected)
 
 def main():
- p=argparse.ArgumentParser();p.add_argument('--manifest',required=True,type=Path);p.add_argument('--out',required=True,type=Path);p.add_argument('--fraction',type=float,default=2/3);p.add_argument('--blacklist',type=Path);p.add_argument('--blacklist-mode',choices=['subtract','drop'],default='subtract');p.add_argument('--universe',choices=['support_core','reproducible_union'],default='support_core');p.add_argument('--min-width',type=int,default=1);a=p.parse_args()
+ p=argparse.ArgumentParser();p.add_argument('--manifest',required=True,type=Path);p.add_argument('--out',required=True,type=Path);p.add_argument('--fraction',type=float,default=2/3);p.add_argument('--blacklist',type=Path);p.add_argument('--blacklist-mode',choices=['subtract','drop'],default='subtract');p.add_argument('--universe',choices=['support_core','reproducible_union'],default='support_core');p.add_argument('--min-width',type=int,default=50);a=p.parse_args()
  if a.min_width<1:p.error('min-width must be >=1')
  if not 0<a.fraction<=1:p.error('fraction must be >0 and <=1')
  if a.out.exists():p.error('Output directory exists')

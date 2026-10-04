@@ -16,7 +16,7 @@ def write_table(path, columns, rows):
         writer.writerows(rows)
 
 
-def plan(config, artifacts, out, mapq, fraction, universe="support_core", blacklist_mode="subtract", min_width=1,
+def plan(config, artifacts, out, mapq, fraction, universe="support_core", blacklist_mode="subtract", min_width=50,
          remove_duplicates=False):
     root, cfg, samples = load(config)
     report = validate(root, cfg, samples, True)
@@ -101,7 +101,7 @@ if __name__ == '__main__':
     p.add_argument('--fraction', type=float, default=2/3)
     p.add_argument('--universe',choices=['support_core','reproducible_union'],default='support_core')
     p.add_argument('--blacklist-mode',choices=['subtract','drop'],default='subtract')
-    p.add_argument('--min-width',type=int,default=1);p.add_argument('--remove-duplicates',action='store_true')
+    p.add_argument('--min-width',type=int,default=50);p.add_argument('--remove-duplicates',action='store_true')
     a = p.parse_args()
     if not 0 <= a.mapq <= 255 or not 0 < a.fraction <= 1 or a.min_width<1:
         p.error('Invalid MAPQ/fraction')

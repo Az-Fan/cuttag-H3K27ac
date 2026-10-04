@@ -77,12 +77,19 @@ with tempfile.TemporaryDirectory() as d:
                           '--reference', str(p / 'target.fa'), '--out', str(p / 'mismatch')], capture_output=True)
     assert bad.returncode != 0
     cross = p / 'cross.tsv'
+    (p / 'reads1_unit2.fq').write_text((p / 'reads1.fq').read_text())
+    (p / 'reads2_unit2.fq').write_text((p / 'reads2.fq').read_text())
     with cross.open('w') as f:
-        w = csv.writer(f, delimiter='\t'); w.writerow(['sample_id', 'fastq_1', 'fastq_2']); w.writerow(['s1', 'reads1.fq', 'reads2.fq'])
+        w = csv.writer(f, delimiter='\t'); w.writerow(['sample_id', 'biological_sample_id', 'unit_id', 'calibration_group', 'fastq_1', 'fastq_2'])
+        w.writerow(['s1', 'bio1', 'u1', 'batchA', 'reads1.fq', 'reads2.fq'])
+        w.writerow(['s1', 'bio1', 'u2', 'batchA', 'reads1_unit2.fq', 'reads2_unit2.fq'])
     subprocess.run([sys.executable, str(ROOT / 'scripts/spikein_crossmap.py'), '--manifest', str(cross),
                     '--target-fasta', str(p / 'target.fa'), '--spikein-fasta', str(p / 'lambda.fa'),
                     '--max-pairs', '8', '--threads', '1', '--out', str(p / 'cross')], check=True)
-    row = json.loads((p / 'cross/provenance.json').read_text())['results'][0]
-    assert row['pairs_tested'] == 8 and sum(row[k] for k in ('unique_target', 'unique_spikein', 'cross_or_discordant', 'ambiguous_or_low_mapq', 'unmapped_or_incomplete')) == 8
-    assert row['unmapped_or_incomplete'] > 0, row
-    print('PASS: MAPQ20/30 spike-in fragment grid, reference guard and competitive paired mapping')
+    rows = json.loads((p / 'cross/provenance.json').read_text())['results']
+    assert len(rows) == 2 and {r['unit_id'] for r in rows} == {'u1', 'u2'}
+    assert all(r['sample_id'] == 's1' and r['biological_sample_id'] == 'bio1' for r in rows)
+    for row in rows:
+        assert row['pairs_tested'] == 8 and sum(row[k] for k in ('unique_target', 'unique_spikein', 'cross_or_discordant', 'ambiguous_or_low_mapq', 'unmapped_or_incomplete')) == 8
+        assert row['unmapped_or_incomplete'] > 0, row
+    print('PASS: MAPQ20/30 spike-in fragment grid, reference guard and unit-aware competitive paired mapping')

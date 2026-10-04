@@ -27,10 +27,18 @@ class StrategyTools(unittest.TestCase):
                          'universe': ['support_core', 'reproducible_union']}}
         result = expand(spec)
         self.assertEqual(len(result), 16)
+        self.assertEqual({r['min_width'] for r in result}, {50})
         self.assertEqual(len({r['candidate_id'] for r in result}), 16)
         self.assertEqual({r['artifact_set'] for r in result}, {'narrow_igg', 'broad_igg'})
         with self.assertRaises(ValueError):
             expand({**spec, 'axes': {'universe': ['unknown']}})
+
+    def test_template_matrix_compares_minimum_width_sensitivity_and_declares_baseline(self):
+        example = json.loads((ROOT / 'examples/strategy_matrix.json').read_text())
+        candidates = expand(example)
+        self.assertEqual({row['min_width'] for row in candidates}, {1, 50, 100})
+        self.assertIn(example['baseline_candidate'], {row['candidate_id'] for row in candidates})
+        self.assertEqual(len(candidates), 48)
 
     def test_matrix_registry_resumes_without_rebuilding_completed_candidates(self):
         config = self.root / 'config.json'; config.write_text('{}')
@@ -66,35 +74,47 @@ class StrategyTools(unittest.TestCase):
         self.assertEqual(report['state'], 'PLANNED')
         self.assertNotIn('-c', report['command'])
 
-    def _candidate(self, name, fragments, peaks):
+    def _candidate(self, name, fragments, peaks, own_counts):
         root = self.root / name
         (root / 'plan/consensus').mkdir(parents=True)
         (root / 'plan').mkdir(exist_ok=True)
         (root / 'run').mkdir()
         (root / 'run/workflow_status.json').write_text(json.dumps({'state': 'COMPUTATIONAL_PASS'}))
         (root / 'plan/consensus/master.bed').write_text(peaks)
-        fragment_file = root / 'plan/fragments/s1/fragments.bed'
-        fragment_file.parent.mkdir(parents=True)
-        fragment_file.write_text(fragments)
+        fragment_files = []
+        for sid in ('s1', 's2'):
+            fragment_file = root / ('plan/fragments/' + sid + '/fragments.bed')
+            fragment_file.parent.mkdir(parents=True)
+            fragment_file.write_text(fragments[sid])
+            fragment_files.append((sid, fragment_file))
         with (root / 'plan/fragments.tsv').open('w') as f:
-            w = csv.writer(f, delimiter='\t'); w.writerow(['sample_id', 'fragments_bed']); w.writerow(['s1', str(fragment_file)])
-        (root / 'plan/counts.tsv').write_text('peak_id\tchrom\tstart\tend\ts1\np1\tchr1\t0\t30\t2\n')
-        (root / 'plan/metadata.tsv').write_text('sample_id\tbiological_sample_id\tcondition\treplicates_confirmed\ns1\tbio1\tControl\tFALSE\n')
-        (root / 'plan/counts.tsv').write_text('peak_id\tchrom\tstart\tend\ts1\np1\tchr1\t0\t30\t2\n')
-        (root / 'plan/metadata.tsv').write_text('sample_id\tbiological_sample_id\tcondition\treplicates_confirmed\ns1\tbio1\tControl\tFALSE\n')
+            w = csv.writer(f, delimiter='\t'); w.writerow(['sample_id', 'fragments_bed'])
+            for sid, fragment_file in fragment_files: w.writerow([sid, str(fragment_file)])
+        (root / 'plan/counts.tsv').write_text(own_counts)
+        (root / 'plan/metadata.tsv').write_text('sample_id\tbiological_sample_id\tcondition\treplicates_confirmed\ns1\tbio1\tControl\tTRUE\ns2\tbio2\tControl\tTRUE\n')
         return {'candidate_id': name, 'state': 'COMPUTATIONAL_PASS', 'mapq': 20, 'remove_duplicates': False,
                 'fraction': 2/3, 'universe': 'support_core', 'blacklist_mode': 'subtract',
                 'artifact_set': 'test', 'plan_dir': str(root / 'plan'), 'run_dir': str(root / 'run')}
 
     def test_strategy_comparison_uses_one_pooled_evaluation_peak_set(self):
-        a = self._candidate('a', 'chr1\t0\t10\nchr1\t20\t30\n', 'chr1\t0\t20\n')
-        b = self._candidate('b', 'chr1\t0\t10\nchr1\t20\t30\n', 'chr1\t10\t30\n')
+        fragments = {'s1': 'chr1\t1\t5\nchr1\t41\t45\nchr1\t42\t46\n',
+                     's2': 'chr1\t2\t6\nchr1\t61\t65\nchr1\t62\t66\n'}
+        a = self._candidate('a', fragments, 'chr1\t0\t10\nchr1\t40\t50\n',
+                            'peak_id\tchrom\tstart\tend\ts1\ts2\na1\tchr1\t0\t10\t5\t1\na2\tchr1\t40\t50\t1\t5\n')
+        b = self._candidate('b', fragments, 'chr1\t20\t30\nchr1\t60\t70\n',
+                            'peak_id\tchrom\tstart\tend\ts1\ts2\nb1\tchr1\t20\t30\t1\t1\nb2\tchr1\t60\t70\t5\t5\n')
         matrix = self.root / 'matrix.json'
         matrix.write_text(json.dumps({'state': 'REVIEW_REQUIRED', 'candidates': [a, b]}))
         result = compare_strategies(matrix, self.root / 'comparison')
         self.assertEqual(len(result['pairwise_peak_agreement']), 1)
-        self.assertAlmostEqual(result['pairwise_peak_agreement'][0]['jaccard_bp'], 1/3)
+        self.assertAlmostEqual(result['pairwise_peak_agreement'][0]['jaccard_bp'], 0.0)
         self.assertTrue((self.root / 'comparison/pooled_candidate_peak_union.bed').is_file())
+        metrics = {r['candidate_id']: r for r in result['candidate_metrics']}
+        self.assertEqual(metrics['a']['mean_replicate_correlation'], -1.0)
+        self.assertEqual(metrics['b']['mean_replicate_correlation'], 1.0)
+        self.assertAlmostEqual(metrics['a']['common_universe_mean_replicate_correlation'],
+                               metrics['b']['common_universe_mean_replicate_correlation'])
+        self.assertTrue((self.root / 'comparison/a.common_universe_counts.tsv').is_file())
         self.assertIn('No method is selected automatically', result['recommendation'])
 
     def test_strategy_comparison_rejects_tampered_candidate_outputs(self):

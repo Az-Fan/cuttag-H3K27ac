@@ -144,7 +144,7 @@ class Maturity(unittest.TestCase):
         (self.p/'peaks.tsv').write_text('group\tbiological_sample_id\tpeaks_bed\ng\ta\ta.bed\ng\tb\tb.bed\ng\tc\tc.bed\n')
         for fraction,end in [('0.3333333333333333',30),('0.6666666666666666',20),('1',10)]:
             dest=self.p/('fraction_'+fraction)
-            subprocess.run([sys.executable,str(ROOT/'scripts/consensus.py'),'--manifest',str(self.p/'peaks.tsv'),'--fraction',fraction,'--out',str(dest)],check=True,capture_output=True)
+            subprocess.run([sys.executable,str(ROOT/'scripts/consensus.py'),'--manifest',str(self.p/'peaks.tsv'),'--fraction',fraction,'--min-width','1','--out',str(dest)],check=True,capture_output=True)
             self.assertEqual((dest/'master.bed').read_text().split()[2],str(end))
 
     def test_spikein_calibration_groups_not_pooled(self):

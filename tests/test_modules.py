@@ -3,6 +3,15 @@ from pathlib import Path
 ROOT=Path(__file__).parents[1]
 s=importlib.util.spec_from_file_location('consensus',ROOT/'scripts/consensus.py');m=importlib.util.module_from_spec(s);s.loader.exec_module(m)
 class Modules(unittest.TestCase):
+ def test_default_min_width_discards_blacklist_fragments_below_50bp(self):
+  with tempfile.TemporaryDirectory() as d:
+   p=Path(d);(p/'a.bed').write_text('chr1\t100\t180\n');(p/'black.bed').write_text('chr1\t145\t148\n')
+   (p/'manifest.tsv').write_text('group\tbiological_sample_id\tpeaks_bed\ng\ta\ta.bed\n')
+   subprocess.run(['python3',str(ROOT/'scripts/consensus.py'),'--manifest',str(p/'manifest.tsv'),'--out',str(p/'out'),'--blacklist',str(p/'black.bed')],check=True)
+   self.assertEqual((p/'out/master.bed').read_text(),'')
+   decisions=json.loads((p/'out/interval_decisions.json').read_text())[0]
+   self.assertEqual(decisions['short_pieces_discarded'],[['chr1',100,145],['chr1',148,180]])
+   self.assertEqual(json.loads((p/'out/provenance.json').read_text())['min_width'],50)
  def test_same_sample_overlap_not_double_counted(self):
   self.assertEqual(m.supported([[('chr1',0,20),('chr1',5,30)],[('chr1',10,25)]],2),[('chr1',10,25)])
  def test_touching_intervals_are_not_overlap(self):
@@ -18,13 +27,13 @@ class Modules(unittest.TestCase):
   with tempfile.TemporaryDirectory() as d:
    p=Path(d);(p/'a.bed').write_text('chr1\t100\t180\n');(p/'black.bed').write_text('chr1\t145\t148\n')
    (p/'manifest.tsv').write_text('group\tbiological_sample_id\tpeaks_bed\ng\ta\ta.bed\n')
-   subprocess.run(['python3',str(ROOT/'scripts/consensus.py'),'--manifest',str(p/'manifest.tsv'),'--out',str(p/'out'),'--blacklist',str(p/'black.bed')],check=True)
+   subprocess.run(['python3',str(ROOT/'scripts/consensus.py'),'--manifest',str(p/'manifest.tsv'),'--out',str(p/'out'),'--blacklist',str(p/'black.bed'),'--min-width','1'],check=True)
    self.assertEqual((p/'out/g.consensus.bed').read_text(),'chr1\t100\t145\nchr1\t148\t180\n')
  def test_reproducible_union_preserves_full_supported_sample_intervals(self):
   with tempfile.TemporaryDirectory() as d:
    p=Path(d);(p/'a.bed').write_text('chr1\t100\t180\n');(p/'b.bed').write_text('chr1\t120\t200\n')
    (p/'manifest.tsv').write_text('group\tbiological_sample_id\tpeaks_bed\ng\ta\ta.bed\ng\tb\tb.bed\n')
-   subprocess.run(['python3',str(ROOT/'scripts/consensus.py'),'--manifest',str(p/'manifest.tsv'),'--out',str(p/'out'),'--universe','reproducible_union'],check=True)
+   subprocess.run(['python3',str(ROOT/'scripts/consensus.py'),'--manifest',str(p/'manifest.tsv'),'--out',str(p/'out'),'--universe','reproducible_union','--min-width','1'],check=True)
    self.assertEqual((p/'out/master.bed').read_text(),'chr1\t100\t200\tpeak_00000001\n')
  def test_release_missing_required_fails(self):
   with tempfile.TemporaryDirectory() as d:

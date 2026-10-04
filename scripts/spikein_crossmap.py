@@ -38,7 +38,8 @@ def rid(record):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--manifest', required=True, type=Path, help='TSV: sample_id fastq_1 fastq_2')
+    p.add_argument('--manifest', required=True, type=Path,
+                   help='TSV: sample_id biological_sample_id unit_id fastq_1 fastq_2 [calibration_group]')
     p.add_argument('--target-fasta', required=True, type=Path)
     p.add_argument('--spikein-fasta', required=True, type=Path)
     p.add_argument('--out', required=True, type=Path)
@@ -51,10 +52,36 @@ def main():
     if a.max_pairs < 0 or a.threads < 1 or not 0 <= a.mapq <= 255:
         p.error('Invalid pair limit, threads or MAPQ')
     rows = list(csv.DictReader(a.manifest.open(), delimiter='\t'))
-    if not rows or not {'sample_id', 'fastq_1', 'fastq_2'}.issubset(rows[0]):
-        p.error('Manifest requires sample_id fastq_1 fastq_2')
-    if len({r['sample_id'] for r in rows}) != len(rows):
-        p.error('Sample IDs must be unique; units should be listed separately')
+    required = {'sample_id', 'biological_sample_id', 'unit_id', 'fastq_1', 'fastq_2'}
+    if not rows or not required.issubset(rows[0]):
+        p.error('Manifest requires ' + ' '.join(sorted(required)))
+    if len({r['unit_id'] for r in rows}) != len(rows):
+        p.error('unit_id values must be unique')
+    sample_to_bio, bio_to_sample, sample_to_group, read_pairs = {}, {}, {}, set()
+    for row in rows:
+        sid, bio, unit = row['sample_id'], row['biological_sample_id'], row['unit_id']
+        for label, value in (('sample_id', sid), ('biological_sample_id', bio), ('unit_id', unit)):
+            if not re.fullmatch(r'[A-Za-z][A-Za-z0-9_]*', value):
+                p.error('Unsafe ' + label + ': ' + value)
+        if sid in sample_to_bio and sample_to_bio[sid] != bio:
+            p.error('sample_id maps to multiple biological_sample_id values')
+        if bio in bio_to_sample and bio_to_sample[bio] != sid:
+            p.error('biological_sample_id maps to multiple sample_id values')
+        sample_to_bio[sid], bio_to_sample[bio] = bio, sid
+        group = row.get('calibration_group', '')
+        if sid in sample_to_group and sample_to_group[sid] != group:
+            p.error('Technical units for one sample_id have different calibration_group values')
+        sample_to_group[sid] = group
+        resolved = []
+        for key in ('fastq_1', 'fastq_2'):
+            path = Path(row[key]); path = path if path.is_absolute() else a.manifest.resolve().parent / path
+            if not path.is_file():
+                p.error('Missing ' + key + ' for unit ' + unit + ': ' + str(path))
+            row[key] = str(path.resolve()); resolved.append(str(path.resolve()))
+        pair = tuple(resolved)
+        if pair in read_pairs:
+            p.error('The same FASTQ pair is assigned to multiple units')
+        read_pairs.add(pair)
     a.target_fasta = a.target_fasta.resolve(); a.spikein_fasta = a.spikein_fasta.resolve()
     a.out.mkdir(parents=True)
     combined = a.out / 'competitive.fa'
@@ -77,13 +104,9 @@ def main():
                    stdout=(a.out / 'index.log').open('w'), stderr=subprocess.STDOUT)
     results = []
     for row in rows:
-        sid = row['sample_id']
-        if not re.fullmatch(r'[A-Za-z][A-Za-z0-9_]*', sid):
-            raise ValueError('Unsafe sample ID')
-        r1 = Path(row['fastq_1']); r2 = Path(row['fastq_2'])
-        r1 = r1 if r1.is_absolute() else a.manifest.resolve().parent / r1
-        r2 = r2 if r2.is_absolute() else a.manifest.resolve().parent / r2
-        dest = a.out / sid; dest.mkdir()
+        sid, bio, unit = row['sample_id'], row['biological_sample_id'], row['unit_id']
+        r1, r2 = Path(row['fastq_1']), Path(row['fastq_2'])
+        dest = a.out / 'units' / unit; dest.mkdir(parents=True)
         fq1, fq2 = dest / 'tested_R1.fastq', dest / 'tested_R2.fastq'
         tested = 0
         pairs = itertools.zip_longest(fastq(r1), fastq(r2))
@@ -92,10 +115,10 @@ def main():
         with fq1.open('w') as x, fq2.open('w') as y:
             for one, two in pairs:
                 if one is None or two is None or rid(one) != rid(two):
-                    raise ValueError('FASTQ mates mismatch in ' + sid)
+                    raise ValueError('FASTQ mates mismatch in ' + unit)
                 x.writelines(one); y.writelines(two); tested += 1
         if not tested:
-            raise ValueError('No reads in ' + sid)
+            raise ValueError('No reads in ' + unit)
         sam = dest / 'competitive.sam'
         cmd = ['bowtie2', '--end-to-end', '--very-sensitive', '--reorder', '--no-mixed', '--no-discordant',
                '-I', '10', '-X', '700', '-x', str(idx / 'competitive'), '-1', str(fq1), '-2', str(fq2),
@@ -143,8 +166,10 @@ def main():
             if current_name is not None:
                 classify(pair)
         if sum(classes.values()) != tested:
-            raise ValueError('SAM pair accounting differs from tested reads for ' + sid)
-        results.append({'sample_id': sid, 'pairs_tested': tested, 'mapq_both_mates': a.mapq,
+            raise ValueError('SAM pair accounting differs from tested reads for ' + unit)
+        results.append({'sample_id': sid, 'biological_sample_id': bio, 'unit_id': unit,
+                        'calibration_group': row.get('calibration_group', ''),
+                        'pairs_tested': tested, 'mapq_both_mates': a.mapq,
                         **classes, 'target_fasta_sha256': sha(a.target_fasta),
                         'spikein_fasta_sha256': sha(a.spikein_fasta),
                         'source_R1_sha256': sha(r1), 'source_R2_sha256': sha(r2),

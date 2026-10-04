@@ -52,7 +52,7 @@ python3 scripts/compare_peaks.py --manifest peak_comparison.tsv --out results/pe
 
 `spikein_compare.py` 保存同一输入子集、参数、日志和哈希；默认只取前 N 对，不宣称是随机代表性抽样。`read1_mapq20_pairs` 只是 read1 的描述性计数；正式计数策略还要审核两端质量。输入的不同技术文件不能冒充不同统计样本。每个 calibration_group 必须是可比较的实验加入/制备集合。
 
-原始 peak 对比输出峰覆盖 bp 交集、Jaccard、双方被保留比例。v0.5.0 的 `strategy_matrix.py` 将多个 caller/background 产物表与 MAPQ、duplicate、consensus fraction、universe 等下游方案组合为独立 DAG；`compare_strategy_matrix.py` 在同一 pooled candidate peak union 上计算 FRiP，并汇总重复样本 raw-count correlation 和区间覆盖一致性。已审核的差异结果可交给 `compare_models.py`，按 reciprocal-overlap 区域比较 LFC 与方向/显著性变化。报告只提供证据，不自动选择实验方案；CI 和合成测试不代表具体项目的全量方案已经运行。
+原始 peak 对比输出峰覆盖 bp 交集、Jaccard、双方被保留比例。`strategy_matrix.py` 将多个 caller/background 产物表与 MAPQ、duplicate、consensus fraction、universe、1/50/100 bp 最小宽度等下游方案组合为独立 DAG；`compare_strategy_matrix.py` 在同一 pooled candidate peak union 上计算 FRiP，并对每个候选在相同区间重新计数以计算 common-universe replicate correlation。候选自身峰集上的相关性仍保留，但只作候选内 QC，不用于跨策略排序。已审核的差异结果可交给 `compare_models.py`，按 reciprocal-overlap 区域比较 LFC 与方向/显著性变化。报告只提供证据，不自动选择实验方案；CI 和合成测试不代表具体项目的全量方案已经运行。
 
 ## 官方流程与环境验收
 

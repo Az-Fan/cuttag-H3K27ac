@@ -60,7 +60,7 @@ Motif 当前按规划执行外部 HOMER，尚未包装通用入口：目标与�
 
 ### 共识峰
 
-峰 manifest 是 TSV：`group biological_sample_id peaks_bed`。peaks_bed 相对 manifest 目录解析。同一生物样本多文件先在样本内合并，因此不能增加支持度。`--fraction` 定义每个组需要的独立样本比例，向上取整；默认 2/3。只保留达到支持度的碱基区间，随后组间 union/merge。默认逐碱基扣除 blacklist 重叠部分，再按 `--min-width` 丢弃过短片段；`--blacklist-mode drop` 仅用于比较“任意重叠即丢弃整个区间”的敏感性结果。provenance 会记录被扣除和因长度丢弃的区间。
+峰 manifest 是 TSV：`group biological_sample_id peaks_bed`。peaks_bed 相对 manifest 目录解析。同一生物样本多文件先在样本内合并，因此不能增加支持度。`--fraction` 定义每个组需要的独立样本比例，向上取整；默认 2/3。只保留达到支持度的碱基区间，随后组间 union/merge。默认逐碱基扣除 blacklist 重叠部分，再按 `--min-width` 丢弃过短片段；模板默认 50 bp，并建议在真实项目中比较 1/50/100 bp。50 bp 是避免极短残片进入下游的操作基线，不是通用生物学阈值。`--blacklist-mode drop` 仅用于比较“任意重叠即丢弃整个区间”的敏感性结果。provenance 会记录被扣除和因长度丢弃的区间。
 
 ```bash
 python scripts/consensus.py --manifest peaks.tsv --blacklist blacklist.bed --out results/peaks/consensus1
@@ -87,7 +87,7 @@ python scripts/spikein_fragments.py --manifest spikein_bams.tsv --reference data
 
 正式差异输入应使用对应策略目录下的 `target_biological_sample_counts.tsv`，不要把 IgG/control 行并入 target DE size factors。`calibration_group` 是必填字段，不能省略后让不同制备/加入批次默认合并。
 
-所有方案都保持 `calibration_accepted=False`。正式接受前需审阅相同输入读段、唯一比对/MAPQ 规则、target+spike-in 竞争比对、等量加样、加入时点、校准范围和完整数据计数。竞争比对诊断可用 `spikein_crossmap.py` 在固定配对 FASTQ 子集上比较唯一 target、唯一 spike-in、跨参考和 ambiguous pairs；子集结果不可代替全量 BAM 计数。
+所有方案都保持 `calibration_accepted=False`。正式接受前需审阅相同输入读段、唯一比对/MAPQ 规则、target+spike-in 竞争比对、等量加样、加入时点、校准范围和完整数据计数。竞争比对诊断可用 `spikein_crossmap.py` 在固定配对 FASTQ 子集上比较唯一 target、唯一 spike-in、跨参考和 ambiguous pairs；manifest 必须提供 `sample_id biological_sample_id unit_id fastq_1 fastq_2`，技术 unit 分别计数并追溯到同一 biological sample；子集结果不可代替全量 BAM 计数。
 
 ### Peak caller 诊断
 

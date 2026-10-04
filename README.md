@@ -1,4 +1,4 @@
-# CUT&Tag 项目模板 v0.5.0
+# CUT&Tag 项目模板 v0.5.1
 
 从 ACLY-CUTTAG 两批项目沉淀的独立模板，面向 paired-end H3K27ac：提供上游运行、科学审核停点、可续跑下游、可选方案对照和可搬迁交付。支持范围及操作步骤见 [操作指南](docs/OPERATIONS.md)，方法细节见 [SOP](docs/SOP.md)。
 
@@ -54,7 +54,7 @@ pixi run -e analysis python scripts/workflow.py --workflow results/downstream_01
 
 ### 方案矩阵与比较
 
-为每个候选峰集准备一个 `sample_id / bam / peaks_bed / bam_policy` manifest，并在 `examples/strategy_matrix.json` 声明候选峰集及 MAPQ、去重、共识支持度和 universe 方案。先生成所有工作流计划，再审核矩阵规模；确认后可用 `--execute` 逐项运行。使用 `compare_strategy_matrix.py` 在候选峰集的固定 pooled-union 区间上汇总 FRiP、峰覆盖和候选间区间重叠。
+为每个候选峰集准备一个 `sample_id / bam / peaks_bed / bam_policy` manifest，并在 `examples/strategy_matrix.json` 声明候选峰集及 MAPQ、去重、共识支持度、universe 和 1/50/100 bp 最小宽度方案。先生成所有工作流计划，再审核矩阵规模；确认后可用 `--execute` 逐项运行。比较器在 pooled candidate peak union 上统一计算 FRiP 和 common-universe replicate correlation；候选自身峰集的 correlation 仅用于内部 QC，不能用于策略间排名。
 
 正式模型审核并运行后，可用 `compare_models.py` 比较 conventional/spike-in 或不同已审核 universe 的区域效应。它按双向覆盖比例进行一对一区域匹配，汇总 log2FC 相关性和方向/显著性变化；结果用于审核，不自动挑选赢家。命令和输入格式见 [操作指南](docs/OPERATIONS.md)。
 

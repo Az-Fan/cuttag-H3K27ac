@@ -81,7 +81,7 @@ pixi run -e analysis python scripts/compare_strategy_matrix.py \
 
 矩阵执行中断且配置、矩阵、artifact 表均未变化时，在同一输出目录加 `--resume --execute` 继续；成功的候选按哈希跳过，已失败的候选仍保留失败证据，修复原因后请用新输出目录重跑。
 
-比较报告在完成候选峰的 pooled union 上重新计算 FRiP，另列每种方案自己的峰数、宽度和覆盖度，并计算 master intervals 的两两覆盖一致性。该 pooled union 只用于固定评价区间，不取代各方案自己的 QC、重复一致性或实验判断。失败候选会保留状态；未完成的候选不会伪装成零值。
+比较报告在完成候选峰的 pooled union 上重新计算 FRiP，并在相同区间上重计数以计算 common-universe replicate correlation。它另列每种方案自己的 peak-universe correlation（仅用于本方案内部 QC，不用于候选排序）、峰数、宽度、覆盖度和 master intervals 的两两覆盖一致性。失败候选会保留状态；未完成的候选不会伪装成零值。
 
 正式差异模型仍需逐个完成审核和运行。将审核过的 DE complete tables 登记到 `candidate_id / normalization / result_tsv / review_json` 表，再运行 `compare_models.py`；它要求模型使用相同对比、设计和过滤阈值，并报告坐标匹配率、log2FC 相关性及方向/显著性变化。互相重叠的 peak universe 使用一对一双向覆盖匹配。此报告不选择归一化或 peak caller；spike-in 是否可解释仍需结合加样证据和校准范围。
 
