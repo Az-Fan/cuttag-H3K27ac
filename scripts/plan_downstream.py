@@ -56,11 +56,11 @@ def plan(config, artifacts, out, mapq, fraction, universe="support_core", blackl
         sid = row['sample_id']
         sample = targets[sid]
         dest = out/'fragments'/sid
-        fragment_args = ['--bam', row['bam'], '--mapq', mapq, '--threads', cfg['resources']['cpus'], '--out', dest]
+        fragment_args = ['--bam', row['bam'], '--sizes', sizes, '--mapq', mapq, '--threads', cfg['resources']['cpus'], '--out', dest]
         if remove_duplicates:
             fragment_args.append('--remove-duplicates')
         add('fragment_'+sid, 'fragments.py', fragment_args,
-            [row['bam']], [dest/'fragments.bed', dest/'summary.json', dest/'length_histogram.tsv'], ['reference'])
+            [row['bam'], sizes], [dest/'fragments.bed', dest/'summary.json', dest/'length_histogram.tsv'], ['reference'])
         peaks.append({'group': sample['condition'], 'biological_sample_id': sample['biological_sample_id'], 'peaks_bed': row['peaks_bed']})
         fragments.append({'sample_id': sid, 'fragments_bed': str(dest/'fragments.bed')})
         metrics.append({'sample_id': sid, 'fragments_bed': str(dest/'fragments.bed'), 'peaks_bed': str(out/'consensus/master.bed')})
@@ -69,8 +69,8 @@ def plan(config, artifacts, out, mapq, fraction, universe="support_core", blackl
     for name, items in [('peaks.tsv', peaks), ('fragments.tsv', fragments), ('qc.tsv', metrics), ('metadata.tsv', metadata)]:
         write_table(out/name, list(items[0]), items)
     blacklist = resolve(root, cfg['reference']['blacklist'])
-    add('consensus', 'consensus.py', ['--manifest', out/'peaks.tsv', '--fraction', fraction, '--blacklist', blacklist, '--universe', universe, '--blacklist-mode', blacklist_mode, '--min-width', min_width, '--out', out/'consensus'],
-        [out/'peaks.tsv', blacklist] + [r['peaks_bed'] for r in rows], [out/'consensus/master.bed', out/'consensus/provenance.json', out/'consensus/interval_decisions.json'], ['reference'])
+    add('consensus', 'consensus.py', ['--manifest', out/'peaks.tsv', '--sizes', sizes, '--fraction', fraction, '--blacklist', blacklist, '--universe', universe, '--blacklist-mode', blacklist_mode, '--min-width', min_width, '--out', out/'consensus'],
+        [out/'peaks.tsv', blacklist, sizes] + [r['peaks_bed'] for r in rows], [out/'consensus/master.bed', out/'consensus/provenance.json', out/'consensus/interval_decisions.json'], ['reference'])
     dependencies = ['fragment_'+r['sample_id'] for r in rows] + ['consensus']
     fragment_files = [r['fragments_bed'] for r in fragments]
     add('counts', 'count_fragments.py', ['--samples', out/'fragments.tsv', '--peaks', out/'consensus/master.bed', '--out', out/'counts.tsv'],

@@ -68,19 +68,28 @@ def reproducible_union(sample_intervals,threshold):
  return merge(selected)
 
 def main():
- p=argparse.ArgumentParser();p.add_argument('--manifest',required=True,type=Path);p.add_argument('--out',required=True,type=Path);p.add_argument('--fraction',type=float,default=2/3);p.add_argument('--blacklist',type=Path);p.add_argument('--blacklist-mode',choices=['subtract','drop'],default='subtract');p.add_argument('--universe',choices=['support_core','reproducible_union'],default='support_core');p.add_argument('--min-width',type=int,default=50);a=p.parse_args()
+ p=argparse.ArgumentParser();p.add_argument('--manifest',required=True,type=Path);p.add_argument('--out',required=True,type=Path);p.add_argument('--fraction',type=float,default=2/3);p.add_argument('--blacklist',type=Path);p.add_argument('--blacklist-mode',choices=['subtract','drop'],default='subtract');p.add_argument('--universe',choices=['support_core','reproducible_union'],default='support_core');p.add_argument('--min-width',type=int,default=50);p.add_argument('--sizes',type=Path,help='Target FASTA .fai; required by planned workflows');a=p.parse_args()
  if a.min_width<1:p.error('min-width must be >=1')
  if not 0<a.fraction<=1:p.error('fraction must be >0 and <=1')
  if a.out.exists():p.error('Output directory exists')
+ sizes=None
+ if a.sizes:
+  entries=[line.split() for line in a.sizes.read_text().splitlines() if line.strip()]
+  sizes={r[0]:int(r[1]) for r in entries}
+  if not sizes or len(sizes)!=len(entries) or any(n<=0 for n in sizes.values()):raise ValueError('Invalid target sequence dictionary')
+ def checked_intervals(path):
+  z=intervals(path)
+  if sizes is not None and any(c not in sizes or e>sizes[c] for c,s,e in z):raise ValueError('Peak/blacklist interval outside target reference: '+str(path))
+  return z
  rows=list(csv.DictReader(a.manifest.open(),delimiter='\t'));groups={};bios={};sources=[]
  for r in rows:
   g,b=r['group'],r['biological_sample_id']
   if b in bios and bios[b]!=g:raise ValueError('Biological sample spans groups')
   bios[b]=g;path=Path(r['peaks_bed']);path=path if path.is_absolute() else a.manifest.parent/path
-  groups.setdefault(g,{}).setdefault(b,[]).extend(intervals(path))
+  groups.setdefault(g,{}).setdefault(b,[]).extend(checked_intervals(path))
   sources.append(dict(r,sha256=hashlib.sha256(path.read_bytes()).hexdigest()))
  if not groups:raise ValueError('Empty peak manifest')
- black=intervals(a.blacklist) if a.blacklist else [];report={};master=[];decisions=[]
+ black=checked_intervals(a.blacklist) if a.blacklist else [];report={};master=[];decisions=[]
  index=blacklist_index(black)
  a.out.mkdir(parents=True)
  for g,samples in groups.items():

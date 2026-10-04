@@ -1,4 +1,4 @@
-# v0.5.1 开发状态
+# v0.5.2 开发状态
 
 本版已形成可复用的项目操作闭环：初始化 → 环境与参考检查 → nf-core 上游 → 审核 → 自动下游计划 → 模型/注释/富集/motif → 可搬迁交付。采用分阶段审核，不会为追求一键运行而自动接受生物重复、IgG、spike-in 或统计模型。
 
@@ -45,7 +45,13 @@
 5. 显式输入适配器的布局契约已有测试；跨所有 nf-core 参数/版本的自动识别、原两批全量重新分析、de novo motif/GSEA、多个峰调用器与全部组合的性能比较，不在本版已验收声明内。
 6. 交付包仅验证文件及链接资源，仍标记 REVIEW_REQUIRED。没有执行破坏性清理，也不会自动删除原始数据。
 
-## v0.5.1 本机验收
+## v0.5.2 使用前核查与本机验收
+
+- 完整 acceptance 9/9、58 项 Python 单元/契约测试通过；精简系统 Python＋bedtools 环境也通过全部 58 项测试，Python 编译及 Pixi 锁文件检查通过。[本版验收记录](docs/validation/2026-10-05/local_acceptance_v052.json) 保存状态与当前源码/示例/CI 配置哈希。
+- 修正示例 2/3 支持度被四舍五入成 0.6667 后实际要求 3/3 的错误；补齐 target BAM 字典、peak 坐标、比较执行证据及样本映射校验；CI 显式安装 bedtools。详见 [使用前核查](docs/USABILITY_AUDIT.md)。
+- 结论：可用于声明范围内的新项目，必要科学审核仍保留；没有将合成测试当作新实验的全量数据验收，也未独立确认本次提交的远端 Actions 状态。
+
+## v0.5.1 本机验收（历史版本）
 
 - Pixi 分析环境下完整 `acceptance.py` 9/9 通过；54 项 Python 单元/契约测试通过。新增验证覆盖 common-universe replicate correlation、blacklist subtraction 后的 50 bp 默认最小宽度和 crossmap 的 unit/biological sample 身份追溯。完整命令、状态和 58 个源码哈希见 [v0.5.1 验收记录](docs/validation/2026-10-04/local_acceptance_v051.json)。
 - 合成项目 fixture 实际运行两个 strategy candidates，并在 pooled union 上统一重计数；项目初始化、片段/共识/count/QC/track DAG、续跑、交付搬迁验证均通过。依然只验证软件行为，不代表具体真实实验的候选方案已完成或被接受。

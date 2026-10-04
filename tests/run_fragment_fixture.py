@@ -9,6 +9,9 @@ with tempfile.TemporaryDirectory() as d:
   for flag,offset,mate,tlen,mapq in [(99,0,20,30,60),(147,20,0,-30,0 if low else 60)]:
    sam.append('\t'.join(map(str,[name,flag+(1024 if dup else 0),'chr1',pos+offset,mapq,'10M','=',pos+mate,tlen,'ACGTACGTAC','IIIIIIIIII'])))
  (p/'x.sam').write_text('\n'.join(sam)+'\n');subprocess.run(['samtools','view','-b','-o',str(p/'x.bam'),str(p/'x.sam')],check=True)
+ (p/'wrong_sizes').write_text('chr1\t2000\n')
+ wrong=subprocess.run([sys.executable,str(ROOT/'scripts/fragments.py'),'--bam',str(p/'x.bam'),'--sizes',str(p/'wrong_sizes'),'--out',str(p/'wrong_reference')],capture_output=True,text=True)
+ assert wrong.returncode!=0 and 'reference dictionary differs' in wrong.stderr and not (p/'wrong_reference').exists(),wrong.stderr
  subprocess.run([sys.executable,str(ROOT/'scripts/fragments.py'),'--bam',str(p/'x.bam'),'--out',str(p/'frags')],check=True)
  assert (p/'frags/fragments.bed').read_text().splitlines()==['chr1\t100\t130\tduplicate','chr1\t10\t40\tregular']
  subprocess.run([sys.executable,str(ROOT/'scripts/fragments.py'),'--bam',str(p/'x.bam'),'--out',str(p/'dedup'),'--remove-duplicates'],check=True)

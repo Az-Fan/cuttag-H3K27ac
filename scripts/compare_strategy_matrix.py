@@ -36,20 +36,17 @@ def correlation(xs, ys):
 
 
 def replicate_correlations(plan_dir):
-    counts = read_tsv(plan_dir / 'counts.tsv')
-    metadata = read_tsv(plan_dir / 'metadata.tsv')
-    by_condition = {}
-    for row in metadata:
-        by_condition.setdefault(row['condition'], []).append(row['sample_id'])
-    output = []
-    for condition, samples in sorted(by_condition.items()):
-        for left, right in itertools.combinations(sorted(samples), 2):
-            xs = [math.log1p(float(row[left])) for row in counts]
-            ys = [math.log1p(float(row[right])) for row in counts]
-            output.append({'condition': condition, 'left_sample': left, 'right_sample': right,
-                           'tested_peaks': len(counts), 'pearson_log1p_raw_counts': correlation(xs, ys)})
-    values = [x['pearson_log1p_raw_counts'] for x in output if x['pearson_log1p_raw_counts'] is not None]
-    return output, statistics.mean(values) if values else None
+    return correlations_from_counts(plan_dir / 'counts.tsv', plan_dir / 'metadata.tsv')
+
+
+def sample_identity(metadata_path):
+    rows = read_tsv(metadata_path)
+    required = ('sample_id', 'biological_sample_id', 'condition')
+    if not rows or any(not r.get(key, '').strip() for r in rows for key in required):
+        raise ValueError('Missing sample identity or condition in metadata')
+    if any(len({r[key] for r in rows}) != len(rows) for key in required[:2]):
+        raise ValueError('Metadata must contain distinct statistical and biological samples')
+    return {r['sample_id']: (r['biological_sample_id'], r['condition']) for r in rows}
 
 
 def count_common_universe(fragments_table, peaks_bed, out_tsv):
@@ -79,10 +76,15 @@ def count_common_universe(fragments_table, peaks_bed, out_tsv):
 
 def correlations_from_counts(counts_path, metadata_path):
     counts = read_tsv(counts_path)
-    metadata = read_tsv(metadata_path)
+    metadata = sample_identity(metadata_path)
+    with Path(counts_path).open() as f:
+        columns = next(csv.reader(f, delimiter='\t'))
+    expected = {'peak_id', 'chrom', 'start', 'end'} | set(metadata)
+    if set(columns) != expected or len(columns) != len(expected):
+        raise ValueError('Count columns differ from metadata or contain duplicate IDs')
     by_condition = {}
-    for row in metadata:
-        by_condition.setdefault(row['condition'], []).append(row['sample_id'])
+    for sid, (_, condition) in metadata.items():
+        by_condition.setdefault(condition, []).append(sid)
     output = []
     for condition, samples in sorted(by_condition.items()):
         for left, right in itertools.combinations(sorted(samples), 2):
@@ -97,9 +99,14 @@ def correlations_from_counts(counts_path, metadata_path):
 def verify_run(status):
     if status.get('state') != 'COMPUTATIONAL_PASS':
         return status.get('state', 'UNKNOWN')
-    for step in status.get('steps', []):
+    steps = status.get('steps')
+    if not isinstance(steps, list) or not steps:
+        return 'EXECUTION_RECORD_INCOMPLETE'
+    for step in steps:
         if step.get('state') != 'COMPUTATIONAL_PASS':
             return 'STEP_STATUS_CHANGED'
+        if not step.get('outputs'):
+            return 'OUTPUT_HASHES_MISSING'
         for filename, expected in step.get('outputs', {}).items():
             path = Path(filename)
             if not path.is_file() or sha256(path) != expected:
@@ -118,12 +125,12 @@ def compare(matrix_path, out):
     for row in records:
         plan_dir = Path(row['plan_dir'])
         status_path = Path(row['run_dir']) / 'workflow_status.json'
-        state = verify_run(json.loads(status_path.read_text())) if status_path.is_file() else row['state']
+        state = verify_run(json.loads(status_path.read_text())) if status_path.is_file() else 'EXECUTION_RECORD_MISSING'
         master = plan_dir / 'consensus/master.bed'
         fragments_table = plan_dir / 'fragments.tsv'
         summary = {'candidate_id': row['candidate_id'], 'state': state, 'mapq': row['mapq'],
                    'remove_duplicates': row['remove_duplicates'], 'fraction': row['fraction'],
-                   'universe': row['universe'], 'blacklist_mode': row['blacklist_mode'],
+                   'universe': row['universe'], 'blacklist_mode': row['blacklist_mode'], 'min_width': row.get('min_width'),
                    'artifact_set': row['artifact_set']}
         if state != 'COMPUTATIONAL_PASS' or not master.is_file() or not fragments_table.is_file():
             summary['metrics_state'] = 'UNAVAILABLE'
@@ -140,15 +147,22 @@ def compare(matrix_path, out):
     if not passed:
         raise ValueError('No completed candidate has valid peak and fragment outputs')
 
+    sample_sets = []
+    identities = []
+    for row, _, _, fragments_table in passed:
+        sample_sets.append({x['sample_id'] for x in read_tsv(fragments_table)})
+        identities.append(sample_identity(Path(row['plan_dir']) / 'metadata.tsv'))
+        if set(identities[-1]) != sample_sets[-1]:
+            raise ValueError('Fragment sample set differs from candidate metadata')
+    if any(samples != sample_sets[0] for samples in sample_sets[1:]):
+        raise ValueError('Candidates have different biological sample sets; cannot compare FRiP on the same evaluation set')
+    if any(identity != identities[0] for identity in identities[1:]):
+        raise ValueError('Candidates have different biological identity or condition mappings')
+
     out.mkdir(parents=True)
     evaluation_bed = out / 'pooled_candidate_peak_union.bed'
     pooled = merge(all_peaks)
     write_bed(evaluation_bed, pooled)
-    sample_sets = []
-    for row, _, _, fragments_table in passed:
-        sample_sets.append({x['sample_id'] for x in read_tsv(fragments_table)})
-    if any(samples != sample_sets[0] for samples in sample_sets[1:]):
-        raise ValueError('Candidates have different biological sample sets; cannot compare FRiP on the same evaluation set')
 
     frip_by_candidate = {}
     for row, summary, _, fragments_table in passed:
@@ -185,7 +199,7 @@ def compare(matrix_path, out):
                          'right_bp_recovered': overlap / nb if nb else None})
     with (out / 'candidate_metrics.tsv').open('w') as f:
         keys = ['candidate_id', 'state', 'metrics_state', 'artifact_set', 'mapq', 'remove_duplicates',
-                'fraction', 'universe', 'blacklist_mode', 'peak_count', 'median_width', 'union_bp',
+                'fraction', 'universe', 'blacklist_mode', 'min_width', 'peak_count', 'median_width', 'union_bp',
                 'mean_replicate_correlation', 'common_universe_mean_replicate_correlation', 'pooled_union_frip_mean']
         writer = csv.DictWriter(f, fieldnames=keys, delimiter='\t', extrasaction='ignore')
         writer.writeheader(); writer.writerows(summaries)

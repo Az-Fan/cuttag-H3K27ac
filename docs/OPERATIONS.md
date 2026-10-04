@@ -66,6 +66,8 @@ pixi run -e analysis python scripts/workflow.py --workflow results/downstream_01
 
 先为每种已运行的 peak calling 方案准备一个 artifact TSV；每份表必须包含完全相同的生物样本 ID，且目标 BAM 保留 duplicate flags。`examples/strategy_matrix.json` 演示如何声明峰集及下游候选轴。候选数量是各轴组合数乘以 artifact set 数，默认最多 48 项，避免意外展开过大的网格。
 
+2/3 支持度请写 `0.6666666666666666`，不要四舍五入为 `0.6667`：支持样本数按向上取整计算，后者在三个重复时会要求 3/3。自动计划会核对 BAM 序列字典和 peak 坐标与 target FASTA 索引一致。已有 v0.5.0/v0.5.1 矩阵若使用过 `0.6667`，请修正配置并用新目录重跑共识及下游；旧产物保留为历史结果。
+
 ```bash
 pixi run -e analysis python scripts/strategy_matrix.py \
   --config config/project.json --matrix examples/strategy_matrix.json \

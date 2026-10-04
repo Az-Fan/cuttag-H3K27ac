@@ -3,6 +3,14 @@ from pathlib import Path
 ROOT=Path(__file__).parents[1]
 s=importlib.util.spec_from_file_location('consensus',ROOT/'scripts/consensus.py');m=importlib.util.module_from_spec(s);s.loader.exec_module(m)
 class Modules(unittest.TestCase):
+ def test_consensus_rejects_peak_outside_target_reference(self):
+  with tempfile.TemporaryDirectory() as d:
+   p=Path(d);(p/'sizes').write_text('chr1\t1000\n')
+   (p/'manifest.tsv').write_text('group\tbiological_sample_id\tpeaks_bed\ng\ta\ta.bed\n')
+   for peak in ('chr2\t0\t100\n','chr1\t900\t1100\n'):
+    (p/'a.bed').write_text(peak)
+    result=subprocess.run(['python3',str(ROOT/'scripts/consensus.py'),'--manifest',str(p/'manifest.tsv'),'--sizes',str(p/'sizes'),'--out',str(p/'out')],capture_output=True,text=True)
+    self.assertNotEqual(result.returncode,0);self.assertIn('outside target reference',result.stderr);self.assertFalse((p/'out').exists())
  def test_default_min_width_discards_blacklist_fragments_below_50bp(self):
   with tempfile.TemporaryDirectory() as d:
    p=Path(d);(p/'a.bed').write_text('chr1\t100\t180\n');(p/'black.bed').write_text('chr1\t145\t148\n')

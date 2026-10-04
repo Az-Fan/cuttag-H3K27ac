@@ -2,9 +2,20 @@
 """Build paired-fragment BED from BAM while preserving duplicates by default."""
 import argparse,collections,csv,json,subprocess
 from pathlib import Path
-p=argparse.ArgumentParser();p.add_argument('--bam',type=Path,required=True);p.add_argument('--out',type=Path,required=True);p.add_argument('--mapq',type=int,default=20);p.add_argument('--threads',type=int,default=4);p.add_argument('--remove-duplicates',action='store_true');a=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('--bam',type=Path,required=True);p.add_argument('--out',type=Path,required=True);p.add_argument('--mapq',type=int,default=20);p.add_argument('--threads',type=int,default=4);p.add_argument('--remove-duplicates',action='store_true');p.add_argument('--sizes',type=Path,help='Target FASTA .fai; required by planned workflows');a=p.parse_args()
 if a.out.exists():p.error('Output exists')
 if not 0<=a.mapq<=255 or a.threads<1:p.error('Invalid MAPQ/thread count')
+if a.sizes:
+ from decisions import sha256
+ rows=[line.split() for line in a.sizes.read_text().splitlines() if line.strip()]
+ expected={r[0]:int(r[1]) for r in rows};actual={}
+ if len(expected)!=len(rows) or not expected or any(v<=0 for v in expected.values()):raise ValueError('Invalid target sequence dictionary')
+ for line in subprocess.check_output(['samtools','view','-H',str(a.bam)],text=True).splitlines():
+  if line.startswith('@SQ\t'):
+   fields=dict(x.split(':',1) for x in line.split('\t')[1:])
+   if fields['SN'] in actual:raise ValueError('Duplicate BAM sequence name')
+   actual[fields['SN']]=int(fields['LN'])
+ if actual!=expected:raise ValueError('Target BAM reference dictionary differs from target FASTA index')
 a.out.mkdir(parents=True);filtered=a.out/'namesorted.bam';
 # Exclude unmapped, mate unmapped, secondary, QC fail, supplementary; retain duplicate-marked reads unless requested.
 exclude=4|8|256|512|2048|(1024 if a.remove_duplicates else 0)
@@ -38,4 +49,4 @@ with (a.out/'fragments.bed').open('w') as out:
 if not n:raise ValueError('No usable paired fragments')
 with (a.out/'length_histogram.tsv').open('w') as f:
  w=csv.writer(f,delimiter='\t');w.writerow(['length','fragments']);w.writerows(sorted(lengths.items()))
-(a.out/'summary.json').write_text(json.dumps({'fragments':n,'minimum_MAPQ_both_mates':a.mapq,'duplicates_removed':a.remove_duplicates,'unit':'paired fragment; TLEN from primary proper pair','discarded_pair_groups':dict(discarded)},indent=2))
+(a.out/'summary.json').write_text(json.dumps({'fragments':n,'minimum_MAPQ_both_mates':a.mapq,'duplicates_removed':a.remove_duplicates,'unit':'paired fragment; TLEN from primary proper pair','discarded_pair_groups':dict(discarded),'reference_sizes_sha256':sha256(a.sizes) if a.sizes else None},indent=2))

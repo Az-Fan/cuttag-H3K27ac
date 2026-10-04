@@ -63,13 +63,18 @@ def match_regions(left, right, reciprocal_overlap):
     for j, row in enumerate(right):
         right_by_chrom[row['chrom']].append((row['start'], row['end'], j))
     starts = {chrom: [x[0] for x in items] for chrom, items in right_by_chrom.items()}
+    # Prefix maxima retain long enclosing intervals while skipping expired prefixes.
+    max_ends = {chrom: list(itertools.accumulate((x[1] for x in items), max))
+                for chrom, items in right_by_chrom.items()}
     possible = []
     for i, a in enumerate(left):
         items = right_by_chrom.get(a['chrom'], [])
         if not items:
             continue
         stop = bisect.bisect_left(starts[a['chrom']], a['end'])
-        for bstart, bend, j in items[:stop]:
+        first = bisect.bisect_right(max_ends[a['chrom']], a['start'])
+        for index in range(first, stop):
+            bstart, bend, j = items[index]
             if bend <= a['start']:
                 continue
             overlap = min(a['end'], bend) - max(a['start'], bstart)

@@ -1,6 +1,8 @@
-# CUT&Tag 项目模板 v0.5.1
+# CUT&Tag 项目模板 v0.5.2
 
 从 ACLY-CUTTAG 两批项目沉淀的独立模板，面向 paired-end H3K27ac：提供上游运行、科学审核停点、可续跑下游、可选方案对照和可搬迁交付。支持范围及操作步骤见 [操作指南](docs/OPERATIONS.md)，方法细节见 [SOP](docs/SOP.md)。
+
+v0.5.2 的新数据使用核查与已修复问题见 [使用前核查](docs/USABILITY_AUDIT.md)。
 
 当前已通过本机合成集成验收和官方 nf-core 测试运行，并对两批真实数据的 spike-in 子集做了参数比较。**这不代表所有参数在新实验上都已得到生物学验证。** 实际结果、条件性推荐和限制见 [可选方案验证](docs/OPTION_VALIDATION.md) 与 [验收状态](PROJECT_STATUS.md)。
 

@@ -9,7 +9,7 @@
   "axes": {
     "mapq": [20, 30],
     "remove_duplicates": [false, true],
-    "fraction": [0.6667, 1.0],
+    "fraction": [0.6666666666666666, 1.0],
     "universe": ["support_core", "reproducible_union"],
     "blacklist_mode": ["subtract"],
     "min_width": [1, 50, 100]
